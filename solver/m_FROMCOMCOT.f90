@@ -13,7 +13,6 @@
 !#   subroutine CALOCEANVXYZ
 !#   subroutine CALOCEANFXYZ
 !#  subroutine GENLVEC3COM(Fxyz, nodes, g_node, nodtot, Fxyzip, ip)
-!#  subroutine OUTVXYZ
 !########################################   COUNTCOMCOT
 module FROMCOMCOT
 use param

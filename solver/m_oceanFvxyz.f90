@@ -865,11 +865,11 @@ integer(4)                            :: node, IPL
 integer(4),allocatable,dimension(:)   :: surfptr
 real(8),   allocatable,dimension(:,:) :: vxyz, xyz
 real(8)       :: vh,ph
-character(4)  :: num
+character(6)  :: num     ! 2019.01.23 4 -> 6
 character(70) :: vhfile, vzfile
 integer(4)    :: i, ii
 character(70) :: outfldr  ! 2018.11.14
-integer(4)    :: lenout       ! 2018.11.14
+integer(4)    :: lenout   ! 2018.11.14
 
 !#[1]## set input
 node    = h_ocean%node
@@ -891,9 +891,9 @@ if (iflag .eq. 0) then
 end if
 
 !#[2]## output
-write(num,'(i4.4)') it
-vhfile=outfldr(1:lenout)//"vh"//num(1:4)//".dat" ! 2018.11.14
-vzfile=outfldr(1:lenout)//"vz"//num(1:4)//".dat" ! 2018.11.14
+write(num,'(i6.6)') it ! 2019.01.23
+vhfile=outfldr(1:lenout)//"vh"//num(1:6)//".dat" ! 2019.01.19
+vzfile=outfldr(1:lenout)//"vz"//num(1:6)//".dat" ! 2019.01.19
 open(1,file=vhfile)
 open(2,file=vzfile)
 do i=1,IPL
