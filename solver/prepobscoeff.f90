@@ -66,8 +66,8 @@ real(8)    :: xyzminmax(6) ! 1 for normal
     do i=1,nobs
      call xyz2lonlatalt(obs_sites%xyz_obs(:,i),lonorigin,latorigin,obs_sites%lonlatalt(:,i))
      call lonlatalt2xyzspherical(obs_sites%lonlatalt(:,i),obs_sites%xyzspherical(:,i))
-     write(*,*) "obs_sites%lonlatalt(1:3,i)=",obs_sites%lonlatalt(1:3,i)
-     write(*,*) "obs_sites%xyzspherical(1:3,i)=",obs_sites%xyzspherical(1:3,i)
+     write(*,'(a,i3,a,3f15.7)') "obs#", i," lon lat alt ",obs_sites%lonlatalt(1:3,i) ! 2019.01.23
+     write(*,'(a,3f15.7)') "-> spherical xyz ",obs_sites%xyzspherical(1:3,i)  ! 2019.01.23
     end do
   end if
 
