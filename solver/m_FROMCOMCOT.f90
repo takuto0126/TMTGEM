@@ -161,8 +161,8 @@ real(8)                           :: dt_comcot ! 2018.11.15
   write(num,'(i6.6)') itime_comcot
   mfile = mpre(1:len_trim(mpre))//num(1:6)//".dat"
   nfile = npre(1:len_trim(mpre))//num(1:6)//".dat"
-  write(*,*) "mfile=",mfile
-  write(*,*) "nfile=",nfile
+  write(*,'(a,a)') "mfile=",mfile(1:len_trim(mfile)) ! 2019.01.23
+  write(*,'(a,a)') "nfile=",nfile(1:len_trim(nfile)) ! 2019.01.23
 
 !#[2]## read vxh, vyh
 open(1,file=mfile)
