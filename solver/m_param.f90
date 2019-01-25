@@ -213,6 +213,10 @@ write(*,*) "Please enter output bxyz, exyz, vxyz folder with the end of /"
 read(input,10) c_param%outbxyzfolder ! 2018.11.14
 read(input,10) c_param%outexyzfolder ! 2018.11.14
 read(input,10) c_param%outvxyzfolder ! 2018.11.14
+write(*,'(a)') c_param%outbxyzfolder ! 2019.01.25
+write(*,'(a)') c_param%outexyzfolder ! 2019.01.25
+write(*,'(a)') c_param%outvxyzfolder ! 2019.01.25
+
 
 !#[5]## observatory info
 write(*,*) "Please enter # of observatories"
