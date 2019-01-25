@@ -194,7 +194,7 @@ iflag_geomag  = g_param%iflag_geomag
  end if
 
 !#[2]## OUTPUT prepared geomag field 2019.01.25
- open(file=g_param%outbxyzfolder//"geomag.out",newunit=unit)
+ open(file=trim(g_param%outbxyzfolder)//"geomag.out",newunit=unit) ! 2019.01.25
   do i=1,h_ocean%IPL
     j=h_ocean%surfptr(i)             ! 2019.01.25
     write(unit,'(5g15.7)') em_mesh%xyz(1:2,j),h_ocean%Fxyz(1:3,j) ! 2019.01.25
