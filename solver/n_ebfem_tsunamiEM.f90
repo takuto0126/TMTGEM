@@ -84,10 +84,10 @@ real(8)             :: tinterval_xy ! 2018.11.14
       igroup(:)=em_mesh%n4flag(:,2) ! 1 for air, 2 for ocean, 3 for below seafloor
 
 !#[Ocean conductivity option]##              ! 2018.11.13
-   call setoceancond(em_mesh,g_param)  ! m_caloceancond.f90 2018.11.13
+  CALL GENOCEANPTR(h_ocean,em_mesh,g_param) ! see m_oceanFvxyz.f90 2017.11.02
+  CALL setoceancond(em_mesh,g_param,h_ocean)  ! m_caloceancond.f90 2018.11.13
 
 !#[2]## allocate h_ocean, calculate nodes, em2oceanptr, ocean2emptr
-  CALL GENOCEANPTR(h_ocean,em_mesh,g_param) ! see m_oceanFvxyz.f90 2017.11.02
   it = 0
   call prepareFxyz(h_ocean,em_mesh,g_param,g_meshpara)                ! h_ocean%Fxyz
   call preparevxyz(h_ocean,em_mesh,g_param,g_meshpara,it,dt,h_comcot) ! h_ocean%vxyz

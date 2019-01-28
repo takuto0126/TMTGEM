@@ -114,6 +114,14 @@ contains
   g_cond%nlon      = nlon
   g_cond%nlat      = nlat
   g_cond%ndepth    = ndepth
+  allocate( g_cond%lon(nlon) )               ! 2019.01.25
+  allocate( g_cond%lat(nlat) )               ! 2019.01.25
+  allocate( g_cond%depth(ndepth) )           ! 2019.01.25
+  allocate( g_cond%lonbnds(  2,nlon) )       ! 2019.01.25
+  allocate( g_cond%latbnds(  2,nlat) )       ! 2019.01.25
+  allocate( g_cond%depthbnds(2,ndepth) )     ! 2019.01.25
+  allocate( g_cond%val(  nlon,nlat,ndepth) ) ! 2019.01.25
+  allocate( g_cond%exist(nlon,nlat,ndepth) ) ! 2019.01.25
   g_cond%lon       = lon
   g_cond%lat       = lat
   g_cond%depth     = depth
