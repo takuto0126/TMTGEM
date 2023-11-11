@@ -19,24 +19,25 @@ tminami@port.kobe-u.ac.jp
 (Faculty of Science, Kobe University)
 
 ### Contents
-1 [Introduction](#Introduction)
-2 [Important notes](#ImportantNotes)
-3 [Required environments](#Required_environments)
-4 [Run sample simulations](#Run_sample_simulations) 
-4.0 [Preparation for running sample simulation in Tohoku/em/](#Preparation)
+
+1. [Introduction](#Introduction) 
+2. [Important notes](#ImportantNotes)
+3. [Required environments](#Required_environments)
+4. [Run sample simulations](#Run_sample_simulations)  
+4.1. [Preparation for running sample simulation in Tohoku/em/](#Preparation)
  - Sample 1: [Tohoku (small mesh)](#Tohoku_small)
  - Sample 2: [Tohoku (large mesh)](#Tohoku_large)
  - Sample 3: [Easter Island](#Easter)
  - Sample 4: [Chile](#Chile)
  - Sample 5: [Mediterranean](#Mediterranean)
 
-5 [Details of the code](#Details_of_code)
-5.1 [Mesh generation part](#Meshgeneration)
-5.2  [Time domain simulation part](#Time-domain-simulation)
-6 Output files of TMTGEM
-7 Release notes
-10 Question and comments are welcome!!
-[References](#References)
+5. [Details of the code](#Details_of_code)  
+5.1. [Mesh generation part](#Meshgeneration)  
+5.2.  [Time domain simulation part](#Time-domain-simulation)
+6. Output files of TMTGEM
+7. Release notes
+8. Question and comments are welcome!!
+9. [References](#References)
 
 
 
@@ -493,9 +494,9 @@ Fig. 22. Intersection occurrence in polygonki.geo. (Visualized by “gmsh polygo
 
 - Minami, T., Toh, H., Ichihara, H., & Kawashima, I. (2017). Three‐Dimensional Time Domain Simulation of Tsunami‐Generated Electromagnetic Fields: Application to the 2011 Tohoku Earthquake Tsunami. Journal of Geophysical Research: Solid Earth, 122(12), 9559-9579.
 
-- Oishi, Y., Piggott, M. D., Maeda, T., Kramer, S. C., Collins, G. S., Tsushima, H., & Furumura, T. (2013). Three‐dimensional tsunami propagation simulations using an unstructured mesh finite element model. Journal of Geophysical Research: Solid Earth, 118(6), 2998-3018.<a id="O2013"></as>
+- Oishi, Y., Piggott, M. D., Maeda, T., Kramer, S. C., Collins, G. S., Tsushima, H., & Furumura, T. (2013). Three‐dimensional tsunami propagation simulations using an unstructured mesh finite element model. Journal of Geophysical Research: Solid Earth, 118(6), 2998-3018.<a id="O2013"></a>
 
-- Tyler, R. H., Boyer, T. P., Minami, T., Zweng, M. M., & Reagan, J. R. (2017). Electrical conductivity of the global ocean. Earth, Planets and Space, 69(1), 156.
+- Tyler, R. H., Boyer, T. P., Minami, T., Zweng, M. M., & Reagan, J. R. (2017). Electrical conductivity of the global ocean. Earth, Planets and Space, 69(1), 156. <a id="T2017"></a>
  
 
 # Appendix A: Derivation of discretized form of the governing equation
