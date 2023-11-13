@@ -34,7 +34,7 @@ tminami@port.kobe-u.ac.jp
 5. [Details of the code](#Details_of_code)  
 5.1. [Mesh generation part](#Meshgeneration)  
 5.2.  [Time domain simulation part](#Time-domain-simulation)
-6. Output files of TMTGEM
+6. [Output files of TMTGEM](#Output_files)
 7. Release notes
 8. Question and comments are welcome!!
 9. [References](#References)
@@ -510,22 +510,22 @@ in the finite element method with the Galerkin method, we numerically solve
 $$ \int_\Omega \left[ w\cdot \left( \nabla \times \nabla \times \mathbf{A} + \mu \sigma \frac{\partial \mathbf{A}}{\partial t}\right)-\mu \sigma (\mathbf{v}\times \mathbf{B}_0)\right]dV=0 $$
 where w is arbitrary test function, where the edge-basis function is adopted for w in the Galerkin method, and Ω is the computational domain.
 By using the relationship $$\nabla \cdot ( \mathbf{A}\times \mathbf{B} ) = \mathbf{B}⋅(\nabla \times \mathbf{A} ) -\mathbf{A}\cdot \left( \nabla \times \mathbf{B} \right)$$, the first term in the left hand side of Eq. (1) is reduced to
-$$ \int_\Omega \left{ \mathbf{w} \cdot \left( \nabla \times \nabla \times \mathbf{A} \right) dV \right} = \int_\Omega \left{ \nabla \cdot \left( ( \nabla \times \mathbf{A}) \right) \times \mathbf{w} \right} + (\nabla \times \mathbf{w} \right)\cdot (∇×A)\right} dV
-$$ $$=\int_\Omega {∇⋅((∇×A)×w)+(∇×w)⋅(∇×A)}dV
-=\int_{\partial \Omega } \left{((∇×\mathbf{A})×\mathbf{w})\cdot \mathbf{n}dS \right} + \int_\Omega {(\nabla \times \mathbf{w})\cdot (\nabla \times \mathbf{A})}dV
-=\int_{\partial \Omega}〖(B×w)⋅ndS〗+∫_\Omega {(\nabla \times \mathbf{w})\cdot (\nabla \times \matbf{A})} dV $$⋅⋅⋅(2)
+$$ \int_\Omega { \mathbf{w} \cdot ( ∇ × ∇ × \mathbf{A} ) dV } = \int_\Omega { ∇ \cdot \left( ∇ \times \mathbf{A} \right) × \mathbf{w} } + \left( ∇ × \mathbf{w} \right) \cdot (∇×A) dV $$
+$$ = \int_\Omega {∇⋅((∇×A)×w)+(∇×w)⋅(∇×A)}dV$$
+$$=\int_{\partial \Omega } \left [((∇×\mathbf{A})×\mathbf{w})\cdot \mathbf{n}dS \right] + \int_\Omega {(∇ × \mathbf{w}) \cdot (∇ × \mathbf{A}) }dV$$
+$$ =\int_{\partial \Omega} [(B×w)⋅ndS]+∫_\Omega [(∇ × \mathbf{w}) \cdot (∇ × \mathbf{A})] dV $$⋅⋅⋅(2)
 Where B=∇×A represents the magnetic field and ∂Ω indicates the boundary surface of the computational domain, and n is a outward unit vector normal to the surface ∂Ω. Taking into account that at ∂Ω,we can take
 n⋅(B×w)=w⋅(n×B)=0,
 where ∇⋅(n×B)=B⋅(∇×n)-n⋅(∇×B)=-n⋅(μj)=0 indicates there are no electric current penetrating the boundary surface. Then, Eq. (2) reduces to
-$$ ∫_Ω〖w⋅(∇×∇×A)dV=∫_Ω{(∇×w)⋅(∇×A)}dV〗$$⋅⋅⋅(3)
+$$ ∫_Ω[w⋅(∇×∇×A)dV]=∫_Ω{(∇×w)⋅(∇×A)}dV〗$$⋅⋅⋅(3)
 Substituting Eq. (3) into Eq. (1), we obtain
-$$ \int_\Omega {(\nabla \times \mathbf{w})\cdot(\nabla \times \mathbf{A})}dV+∫_Ω〖μσw⋅∂A/∂t dV〗=μσ\int_\Omega\left w⋅(v\times B_0)dV \right]$$.⋅⋅⋅(4)
+$$ \int_\Omega {(\nabla \times \mathbf{w})\cdot (\nabla \times \mathbf{A})}dV+∫_Ω[μσw⋅∂A/∂t dV]=μσ\int_\Omega\left[ w⋅(v\times B_0)dV \right]$$.⋅⋅⋅(4)
 In the finite element method, we divide the numerical domain into finite number of the tetrahedrons and calculate the volume integral for each tetrahedral element. In the remaining, we think only an volume integral for e-th element, Ω_e, then Eq. (4) is rewritten for e-th element as
-$$ ∫_(Ω_e) {(∇×w_i )⋅(∇×A_e )}dV+∫_(Ω_e)〖μσw_i⋅(∂A_e)/∂t dV〗=μσ∫_(Ω_e)〖w_i⋅(v×B_0)dV〗⋅$$⋅⋅(5)
-where w_i  (i=1,⋅⋅⋅,6) is the edge-basis function for each edge of the e-th tetrahedron. We represent the vector potential in the e-th element as
-$$ A_e=\Sigma_(j=1)^6 \left[ w_j \left[ [Al]\right]_j \right]$$⋅⋅⋅⋅(6)
+$$ ∫_{Ω_e} {(∇×w_i )⋅(∇×A_e )}dV+∫_{Ω_e} \left[μσw_i⋅\frac{\partial A_e}{\partial t} dV \right] =μσ∫_{Ω_e}[w_i⋅(v×B_0)dV]⋅$$⋅⋅(5)
+where $$w_i  (i=1,⋅⋅⋅,6)$$ is the edge-basis function for each edge of the e-th tetrahedron. We represent the vector potential in the e-th element as
+$$ A_e=∑_{j=1}^6 \left[ w_j  [Al]_j \right]$$⋅⋅⋅⋅(6)
 wehre
-w_j=w_kl=λ_k ∇λ_l-λ_l ∇λ_k.
+$$w_j=w_{kl}=λ_k ∇λ_l-λ_l ∇λ_k $$.
 λ_k is the nodal basis function. The relationship between j and k,l are shown in the following figure and table.
  
 
@@ -538,23 +538,23 @@ i, j (edge id)	k	l	m	n
 6	3	4	1	2
 Table A1
 Using Eq. (6), Eq. (5) can be reduced to
-∑_(j=1)^6〖∫_(Ω_e) {(∇×w_i )⋅(∇×w_j )}dV [Al]_j 〗+∑_(j=1)^6〖∫_(Ω_e)〖μσw_i⋅w_j dV〗 〖d/dt [Al]〗_j 〗=μσ_e ∫_(Ω_e)〖w_i⋅(v×B_0)dV〗,⋅⋅⋅(7)
+$$∑_{j=1}^6 \left[∫_{Ω_e} {(∇×w_i )⋅(∇×w_j )}dV [Al]_j \right] +∑_{j=1}^6 \left[ ∫_{Ω_e}[μσw_i⋅w_j] dV \frac{d}{dt} [Al]_j \right] =μσ_e ∫_{Ω_e}〖w_i⋅(v×B_0)dV〗$$,⋅⋅⋅(7)
 which is rewritten in the matrix form as,
 
-{[M_e ]+μσ_e [N_e ]  d/dt}[〖Al〗_e ]=s_e ⋅⋅⋅(8)
+$$[M_e ]+μσ_e [N_e ]  \frac{d}{dt} [Al]_e =s_e$$ ⋅⋅⋅(8)
 
-[〖Al〗_e ]=[〖Al〗_1  〖Al〗_2  〖Al〗_3  〖Al〗_4  〖Al〗_5  〖Al〗_6 ]^T⋅⋅⋅(9)
-[M_e ]_ij=∫_(Ω_e)▒{(∇×w_i )⋅(∇×w_j )}dV=1/3v x_mn⋅1/3v x_(m^' n^' )×v=1/9v x_mn⋅x_(m^' n^' )⋅⋅⋅(10)
-[N_e ]_ij=∫_(Ω_e)▒〖w_i⋅w_j dV〗=∫_(Ω_e)▒〖(λ_k ∇λ_l-λ_l ∇λ_k )⋅(λ_(k^' ) ∇λ_(l^' )-λ_(l^' ) ∇λ_(k^' ) )dV〗
-=∫_(Ω_e)▒(λ_k λ_(k^' ) ∇λ_l⋅∇λ_(l^' )-λ_k λ_(l^' ) ∇λ_l⋅∇λ_(k^' )-λ_l λ_(k^' ) ∇λ_k⋅∇λ_(l^' )+λ_l λ_(l^' ) ∇λ_k⋅∇λ_(k^' ) )dV
-=∇λ_l⋅∇λ_(l^' ) ∫_(Ω_e)▒〖λ_k λ_(k^' ) dV〗-∇λ_l⋅∇λ_(k^' ) ∫_(Ω_e)▒〖λ_k λ_(l^' ) dV〗
--∇λ_k⋅∇λ_(l^' ) ∫_(Ω_e)▒〖λ_l λ_(k^' ) dV〗+∇λ_k⋅∇λ_(k^' ) ∫_(Ω_e)▒〖λ_l λ_(l^' ) dV〗⋅⋅⋅(11)
-[s_e ]_i=μσ_e ∫_(Ω_e)▒〖w_i⋅(v×B_0 )dV〗=μσ_e ∫_(Ω_e)▒〖w_i⋅(∑_(j=1)^4▒〖λ_k [v×B_0 ]_j 〗)dV〗=μσ_e ∑_(m=1)^4▒[(∫_(Ω_e)▒〖w_i λ_m dV〗)⋅[v×B_0 ]_m ] 
-=μσ_e ∑_(m=1)^4▒[(∫_(Ω_e)▒〖(λ_k ∇λ_l-λ_l ∇λ_k ) λ_m dV〗) 〖⋅[v×B_0 ]〗_m ]   (12)
+$$ [[Al]_e ]=[[Al]_1  [Al]_2  [Al]_3  [Al]_4  [Al]_5  [Al]_6 ]^T$$⋅⋅⋅(9)
+$$[M_e ]_ij=∫_(Ω_e){(∇×w_i )⋅(∇×w_j )}dV=1/3v x_mn⋅1/3v x_{m'n'}×v=1/9v x_mn⋅x_{m'n'}⋅$$⋅⋅(10)
+$$[N_e ]_{ij}=∫_{Ω_e}〖w_i⋅w_j dV〗=∫_{Ω_e}[(λ_k ∇λ_l-λ_l ∇λ_k )⋅(λ_{k'} ∇λ_{l'}-λ_{l'} ∇λ_{k'} )dV]$$
+$$ =∫_{Ω_e}(λ_k λ_{k'} ∇λ_l⋅∇λ_{l'}-λ_k λ_{l'} ∇λ_l⋅∇λ_{k'}-λ_l λ_{k'} ∇λ_k⋅∇λ_{l'}+λ_l λ_{l'} ∇λ_k⋅∇λ_{k'} )dV$$
+$$=∇λ_l⋅∇λ_{l'} ∫_{Ω_e}[λ_k λ_{k'} dV]-∇λ_l⋅∇λ_{k'} ∫_{Ω_e}[λ_k λ_{l'} dV]$$
+$$-∇λ_k⋅∇λ_{l'} ∫_{Ω_e}[λ_l λ_{k'} dV]+∇λ_k⋅∇λ_{k'} ∫_{Ω_e}[λ_l λ_{l'} dV]$$⋅⋅⋅(11)
+$$[s_e ]_i=μσ_e ∫_{Ω_e}[w_i⋅(v×B_0 )dV]=μσ_e ∫_{Ω_e}[w_i⋅(∑_{j=1}^4〖λ_k [v×B_0 ]_j 〗)dV〗=μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i λ_m dV])⋅[v×B_0 ]_m ] $$
+$$=μσ_e ∑_{m=1}^4 [(∫_{Ω_e}[(λ_k ∇λ_l-λ_l ∇λ_k ) λ_m dV]) [⋅v×B_0 ]_m ]$$   (12)
 Here we introduce the backward Euler method for temporal evolution,
-(∂u_(n+2))/∂t=1/2Δt (3u_(n+2)-4u_(n+1)+u_n ).⋅⋅⋅(13)
+$$\frac{\partial u_{n+2}}{\partial t}=\frac{1}{2Δt} (3u_{n+2}-4u_{n+1}+u_n ).$$⋅⋅⋅(13)
 Applying Eq. (13) to Eq. (8) leads to
-{[M_e ]+(3μσ_e)/2Δt [N_e ]} [〖Al〗_e ]_(n+2)=1/2Δt [N_e ](4[〖Al〗_e ]_(n+1)-[〖Al〗_e ]_n )+〖s_e〗_(n+2)⋅⋅⋅(14)
+$$ \left[ [M_e ]+\frac{3μσ_e}{2Δt} [N_e ] \right] [[Al]_e ]_{n+2}=\frac{1}{2Δt} [N_e ](4[[Al]_e ]_{n+1}-[[Al]_e ]_n )+[s_e]_{n+2}$$⋅⋅⋅(14)
 
 Appendix B: Scaling of the governing equation
 From eq. (14), the equation to be solved at each time step is rewritten as
