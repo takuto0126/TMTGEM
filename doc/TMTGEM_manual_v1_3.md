@@ -36,7 +36,7 @@ tminami@port.kobe-u.ac.jp
 5.2.  [Time domain simulation part](#Time-domain-simulation)
 6. [Output files of TMTGEM](#Output_files)
 7. [Release notes](#Release_notes)
-8. Question and comments are welcome!!
+8. [Question and comments are welcome!!](#Questions)
 9. [References](#References)
 
 
@@ -486,7 +486,7 @@ From ver 1.0 to ver 1.1, no significant differences were made in the solver part
 
 Fig. 22. Intersection occurrence in polygonki.geo. (Visualized by “gmsh polygonki.geo”)
 
-# 7 Questions and comments are welcome!!
+# 7 Questions and comments are welcome!!<a id="Questions"></a>
 Please send messages to takuto.minami126@gmail.com when you face any difficulties while running TMTGEM. There should be many remaining bugs and this manual is not well written. I can revise this manual by reflecting your questions and comments, which can help other users. 
 
 # 8 References <a id="References"> </a>
