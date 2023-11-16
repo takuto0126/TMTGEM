@@ -97,7 +97,7 @@ As preparation, tsunami flow data and simulation mesh are necessary for tsunami 
 	$ gmsh em3d.msh                           (check generated 3d mesh, see Fig. 1c)
 
 When the preparation is successful, users can see the following figures.
-![Fig1](imgaes/Fig1.png)
+![Fig1](./images/Fig1.png)
 Fig. 1. (a) Tsunami height drawn by “./plot_z.sh 000600” in Tohoku/flow/. (b) 2-D mesh of polygonki.msh drawn by “gmsh polygonki.msh” in Tohoku/mesh/. (c) Final 3-D mesh drawn by “gmsh em3d.msh” in sample1/mesh/.
 
 ## 4.1 Sample 1: Tohoku (small mesh)<a id="Tohoku_small"></a>
