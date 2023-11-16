@@ -12,7 +12,7 @@
 # Manual of TMTGEM v1.3
 ## Takuto Minami’s Tsunami-Generated Electro-Magnetic simulation code
 
-#### As of Dec 10, 2021
+#### As of Nov 11, 2023
 
 Takuto MINAMI
 tminami@port.kobe-u.ac.jp
