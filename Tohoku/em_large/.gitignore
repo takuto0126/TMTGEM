@@ -1,0 +1,4 @@
+*.cpt *.pdf *.ps *.dat
+bxyz/*
+exyz/*
+vxyz/*
