@@ -30,7 +30,6 @@ character ( 70 )                      :: oceanfile="ocean.msh"
 !#[1]## read parameters
  CALL READMESHPARA(g_meshpara)
  CALL CALCARTESIANBOUND(g_meshpara)
-      gebcofile=g_meshpara%topofile
       head=g_meshpara%head
       mshfile=head(1:len_trim(head))//"_ki.msh"
       polyzfile=head(1:len_trim(head))//"z.msh"
@@ -53,7 +52,7 @@ character ( 70 )                      :: oceanfile="ocean.msh"
       n2      = h_mesh%n2
       lbelong = h_mesh%n2flag(:,2)
 
-call calztopo2(gebcofile, h_mesh, zlabel,ibelflg,inib,coastlinedepth,g_meshpara)
+call calztopo2(h_mesh, zlabel,ibelflg,inib,coastlinedepth,g_meshpara)
      deallocate (zlabel,ibelflg)
      z = h_mesh%xyz(3,:)
 !     z = z * 30.d0 ! only for visualize
@@ -101,15 +100,16 @@ write(*,*) "### READZLABEL02 END!! ###"
 return
 end subroutine readzlabel02
 !############################################ calztopo2
-subroutine calztopo2(gebcofile,h_mesh,zlabel,ibelflg,inib,coastlinedepth,g_meshpara)
+subroutine calztopo2(h_mesh,zlabel,ibelflg,inib,coastlinedepth,g_meshpara)
 use constants
+use coastline_data ! 2019.02.27
 use param_mesh
 use mesh_type
+use topo_tool      ! 2019.02.27
 implicit none
 type(mesh),            intent(inout)  :: h_mesh
 type(meshpara),        intent(in)     :: g_meshpara
 integer(4),            intent(in)     :: inib, zlabel(inib), ibelflg(inib)
-character(70),         intent(in)     :: gebcofile
 real(8),               intent(in)     :: coastlinedepth
 real(8),   allocatable,dimension(:)   :: x,y,z
 integer(4),allocatable,dimension(:)   :: lbelong,zlabelful ! 2018.08.28
@@ -119,6 +119,9 @@ integer(4)                            :: ntopo,node,neast,nsouth,i,j,ii,k,neast1
 real(8)                               :: lonorigin,latorigin, calz
 real(8),   allocatable,dimension(:)   :: lon,lat,zt,x1,y1
 real(8),               dimension(4)   :: xbound,ybound ! 2017.06.27
+character(70)                         :: gebcofile
+type(grid_data)                       :: gebco_grd     ! 2019.02.27
+integer(4)                            :: node0
 
 !#[0]## set input
  node      = h_mesh%node
@@ -134,46 +137,31 @@ real(8),               dimension(4)   :: xbound,ybound ! 2017.06.27
  lbelong   = h_mesh%n2flag(:,2)
  lonorigin = g_meshpara%lonorigin
  latorigin = g_meshpara%latorigin
- xbound    = g_meshpara%xbound  ! 2017.06.27
- ybound    = g_meshpara%ybound  ! 2017.06.27
+ xbound    = g_meshpara%xbound    ! 2017.06.27
+ ybound    = g_meshpara%ybound    ! 2017.06.27
+ gebcofile = g_meshpara%topofile  ! 2019.02.27
 
-!# [1] ### count lines of gebcofile
- ntopo=0
- open(1,file=gebcofile)
- do while (ntopo .ge. 0)
-  read(1,*,end=99)
-  ntopo=ntopo+1 ! ntopo is # of lines in gebcofile
- end do
-99 continue
-
-!# [2] ### read coordinates in gebcofile
- allocate(lon(ntopo),lat(ntopo),zt(ntopo),x1(ntopo),y1(ntopo))
- rewind(1)
- do i=1,ntopo
-  read(1,*) lon(i),lat(i),zt(i)
- end do
- close(1)
-
-!# [3] ### measure # of nodes in horizontal and vertical directions
- do i=1,ntopo
-  if ( lon(i+1) .lt. lon(i) ) then
-   neast=i; goto 98 ! neast is # of nodes in horizontal direction
-  end if
- end do
-98 continue  ! nsouth is # of nodes in vertical direction
- nsouth=ntopo/neast
+!# [1] ### read coordinates in gebcofile
+ CALL COUNTNODE1(gebcofile,node0)     !
+ CALL ALLOCATEGRD(gebco_grd,node0)    !allocate (lon(node0),lat(node0),h0(node0))
+ CALL READGEBCO2(gebcofile,gebco_grd) ! lon [deg], lat [deg], alt [m] (upward positive) are obtained
+ ntopo = gebco_grd%node
+ neast  = gebco_grd%neast
+ nsouth = gebco_grd%nsouth
  write(*,*) "nsouth=",nsouth,"neast=",neast,"ntopo=",ntopo
 
-!# [4] ### convert londitude and  latitude to cartecian coordinates about gebco data
- y1(:) = earthrad*(lat(:)-latorigin)*d2r ! [km] vertical cooridinate
- x1(:) = earthrad*dcos(latorigin*d2r)*(lon(:)-lonorigin)*d2r ! [km] horizontal coordinate
- zt(:) = zt(:)/1000.d0 ! [m] -> [km]
+ !#[2]## lonlat to xyz
+ CALL LONLATTOXY4(gebco_grd,g_meshpara) ! 2019.02.27
+ allocate(x1(ntopo),y1(ntopo),zt(ntopo))
+ x1(:)  = gebco_grd%xyz(1,:)
+ y1(:)  = gebco_grd%xyz(2,:)
+ zt(:)  = gebco_grd%xyz(3,:)/1000. ! [m] -> [km] upward positive
+
  if (.false.) then ! 2018.11.09
- open(1,file="gebcoz.dat")
-  write(1,'(3g15.7)') (x1(i),y1(i),zt(i), i=1,ntopo)
- close(1)
+  open(1,file="gebcoz.dat")
+   write(1,'(3g15.7)') (x1(i),y1(i),zt(i), i=1,ntopo)
+  close(1)
  end if ! 2018.11.09
- deallocate(lon,lat)
 
 !# [5] ### calculate zlabel for all nodes, zlabelful
  zlabelful(1:inib)=zlabel(1:inib) ! zlabelful(i) tells if the i-th node is on coastlines (0) or in the ocean (1).
@@ -233,6 +221,7 @@ return
 999 continue
 write(*,*) "GEGEGE when node # is k=",k,"x(k),y(k)=",x(k),y(k)
 write(*,*) "neast1=",neast1,"nsouth1=",nsouth1
+write(*,*) "x1(1)",x1(1),"x1(neast)",x1(neast)
 stop
 end subroutine calztopo2
 !######################################################  function calz

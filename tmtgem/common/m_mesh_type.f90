@@ -69,17 +69,18 @@ end
 subroutine gengridforlist(xyzminmax,glist)
 type(grid_list_type),intent(inout) :: glist
 real(8),intent(in) :: xyzminmax(6)
-real(8) :: xmin,xmax,ymin,ymax,zmin,zmax
-integer(4) :: nx,ny,nz,i,j,k
-xmin=xyzminmax(1)
-xmax=xyzminmax(2)
-ymin=xyzminmax(3)
-ymax=xyzminmax(4)
-zmin=xyzminmax(5)
-zmax=xyzminmax(6)
-nx=glist%nx
-ny=glist%ny
-nz=glist%nz
+real(8)            :: xmin,xmax,ymin,ymax,zmin,zmax
+integer(4)         :: nx,ny,nz,i,j,k
+
+xmin = xyzminmax(1)
+xmax = xyzminmax(2)
+ymin = xyzminmax(3)
+ymax = xyzminmax(4)
+zmin = xyzminmax(5)
+zmax = xyzminmax(6)
+nx   = glist%nx
+ny   = glist%ny
+nz   = glist%nz
 
 !#[1] generate x,y,z grid
 do i=1,nz+1

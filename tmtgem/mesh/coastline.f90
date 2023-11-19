@@ -13,7 +13,8 @@ use bgelem
 use constants ! added on 2016.09.03
 use coastline_data
 use param_mesh ! see m_param_mesh.f90, added on Sep. 7, 2016
-use topo_tool ! 2018.08.27
+use topo_tool    ! 2018.08.27
+use intersection ! 2019.02.27
 implicit none
 type(meshpara)       :: g_meshpara ! see m_param_mesh.f90
 type(grid_data)      :: gebco_grd  ! see m_coastline_data.f90
@@ -25,11 +26,11 @@ type(poly_data)      :: i_poly     ! polygon after add corner
 type(bound_data)     :: g_bound    ! ncmax, zlabel(ncmax), ibelong(ncmax)
 integer(4)           :: node,ncmax,node0,lpmax,i
 ! node0 is the # of nodes in read file, node is the # of nodes used in calculation
-integer(4),allocatable,dimension(:) :: iflgsealand
-integer(4),            dimension(3) :: iflg,ilflg
+logical,allocatable,dimension(:) :: iflag_coast_required ! 2019.02.25
+integer(4),            dimension(0:3) :: iflg,ilflg ! 2019.02.20
 !  ilflg(i) is polygon # whithin nclose land polygons
 !  where i-th corner node should be included for land
-real(8),dimension(3) :: xcorner,ycorner
+real(8),dimension(0:3) :: xcorner,ycorner ! 2019.02.20
 character(70)        :: head
 character(70)        :: geofile, geofileki, gebcofile
 character(70)        :: coastfile="coast.dat", zlfile  ="zlabel.dat"
@@ -52,115 +53,147 @@ CALL CALCARTESIANBOUND(g_meshpara)
 
 !#[2]## truncate topography data based on given parameters
  CALL TRUNCATEGRD3(gebco_grd, g_grd, g_meshpara)
+
  CALL DEALLOCATEGRD(gebco_grd)        ! see m_coastline_data.f90
 
 !#[3]## calculate cartesian coordinate XYZ ! x (eastward) [km], y (northward) [km], z(upward) [m]
- CALL LONLATTOXY4(g_grd,g_meshpara)              ! calculate xyz from lon,lat, alt
-      !g_grd%xyz(3,:)=-8000.d0
-      !do i=1,g_grd%node
-	!  if (sqrt(g_grd%xyz(1,i)**2. + g_grd%xyz(2,i)**2.) .lt. 300.d0 ) g_grd%xyz(3,i)=200.d0
-      !end do
+ CALL LONLATTOXY4(g_grd,g_meshpara)        ! 2019.02.27 m_topo_tool.f90
+
+ if ( .true. ) then ! 2019.03.08
+  open(1,file="topo.xyz")
+  write(1,'(3g15.7)') (g_grd%xyz(1,i),g_grd%xyz(2,i),g_grd%xyz(3,i),i=1,g_grd%node)
+  close(1)
+ end if
 
 !#[4]## output background mesh
  CALL OUTBGMESH14(g_grd,posfile,pos,g_meshpara) ! make posfile
- call outposgeo(5,pos,pos5file) ! 5 is the # for center bgmesh info, see bgele.f90
+ CALL outposgeo(5,pos,pos5file) ! 5 is the # for center bgmesh info, see bgele.f90
  CALL outbgmesh14_obs(g_meshpara,posfile,pos)   ! pos generation is added on 2018.08.28
 
      node  = g_grd%node
-     ncmax = node/50 ! ncmax is the max # of points on coastline
+     call countncoast(g_grd,ncmax) ! set ncmax 2019.03.06
+     ncmax = ncmax+4               ! 2019.03.06
 
 !#[5]## make coast
- call allocatecoast(g_coast,ncmax) ! ncmax is max # of points on coastlines
- call makecoast5(g_grd,g_coast)    ! make coast nodes and output coastfile
+ CALL allocatecoast(g_coast,ncmax) ! ncmax is max # of points on coastlines
+ CALL makecoast5(g_grd,g_coast)    ! make coast nodes and output coastfile
 ! call coastout6(g_coast,coastfile) ! commented out 2018.11.09
 
-      lpmax=500 ! max total number of polygons
+      lpmax=2000 ! max total number of polygons
 
 !#[6]## compose polygon for land and oceans
  call allocatepoly(g_poly,lpmax,ncmax,lpmax) ! nclose for g_poly is unknow here
  call makepolygon7(g_coast,g_grd,g_poly)     ! lpoly0= # of polygons
-! call outpolygon8(g_poly,g_coast,head,0) ! commented out on 2018.11.09
+ call outpolygon8(g_poly,g_coast,head,0)    ! [for check] commented out on2019.03.07
 
-     allocate (iflgsealand(lpmax)) ! iflgsealand : 0 -> not determined, 1 -> in ocean, 2 -> in land
+     allocate (iflag_coast_required(lpmax)) ! true: ocean-land boundary, flase -> lake boundary in land region 2019.02.25
 
 !#[7]## choose and exclude land lake polygons
  ! judge if polygons are in land or oceans
- call judgeocean9(iflgsealand,g_coast,g_poly,g_grd,lpmax) ! 2018.08.28
- call landpolygon10(iflgsealand,g_poly,g_coast,lpmax) ! ind_r is modified
-! call outpolygon8(g_poly,g_coast,head,1) ! commented out on 2018.11.09
+ call judgeocean9(iflag_coast_required,g_coast,g_poly,g_grd,lpmax,g_meshpara) ! 2019.02.28
+ call landpolygon10(iflag_coast_required,g_poly,g_coast,lpmax) ! ind_r is modified
+ call outpolygon8(g_poly,g_coast,head,1) ! [for check] commented out on 2019.03.07
 
 !#[8]## smoothen the coastlines by spline and background size information
  call smoothen10_5(g_poly,h_poly,g_coast,h_coast,g_meshpara,500.d0,pos) ! h_poly is generated
      call deallocatecoast(g_coast)
      call deallocatepoly(g_poly)
-     call outpolygon12(h_poly,head,2) ! commented out 2018.11.09
+     call outpolygon12(h_poly,head,2)           ! commented out 2018.11.09
+ call avoidintersections(h_poly)                ! m_intersection.f90
+ call avoidintersections_interpolygons(h_poly)  ! m_intersection.f90 2019.02.27
+ call outpolygon12(h_poly,head,3)           ! commented out 2018.11.09
 
 !#[9]## add corner nodes and integrate nclose polygons
  call allocatebound(g_bound,ncmax)
  call addcorner11(h_poly,i_poly,g_grd,g_bound,iflg,ilflg,xcorner,ycorner) ! i_poly is generated
-! call outpolygon12(i_poly,head,3) ! commented out 2018.11.09
+ call outpolygon12(i_poly,head,4) ! [for check] commented out on2019.03.07
 
 !#[10]## output .geo file
-call outpolygeo13(i_poly,geofile,geofileki,g_bound,zlfile,iflg,ilflg,xcorner,ycorner,h_poly,g_meshpara) ! g_meshpara is added on 2017.06.28
+ call outpolygeo13(i_poly,geofile,geofileki,g_bound,zlfile,iflg,ilflg,xcorner,ycorner,h_poly,g_meshpara) ! 2017.06.28
+ call outlandpolygon14(h_poly,ilflg,xcorner,ycorner)
 
 end program coastline
-!##
-!##########################################################   countnode1
-subroutine countnode1(gebcofile,node)
-implicit none
-integer(4) :: node
-character(70) :: gebcofile
-node=0
-open(1,file=gebcofile)
-do while (node .ge. 0)
-  read(1,*,end=99)
-  node=node+1
-end do
-99 continue
-close(1)
-write(*,'(a,a,a,i10)') "# of poins of ", trim(gebcofile)," is", node  ! inserted on Oct. 24, 2015
-write(*,*) "### countnode1 end! ###"
-return
-end subroutine countnode1
 
-
-!########################################################### lonlattoxy4
-subroutine lonlattoxy4(g_grd,g_meshpara)
-use constants
+!########################################################### countncoast
+subroutine countncoast(g_grd,ncmax)
 use coastline_data
-use param_mesh
 implicit none
-type(meshpara),    intent(in)      :: g_meshpara
-type(grid_data),   intent(inout)   :: g_grd
-real(8)                            :: lonorigin,latorigin
-integer(4)                         :: i,node
-real(8),allocatable,dimension(:,:) :: lonlatalt ! 2018.08.28
+type(grid_data),  intent(in)     :: g_grd
+integer(4),       intent(out)    :: ncmax
+integer(4)                       :: jj,neast,nsouth,node,i,j,ii,i1,i2,i3
+real(8),allocatable,dimension(:) :: h
 
-!#[0]## set
- node      = g_grd%node           ! 2108.08.28
- allocate( lonlatalt(3,node))     ! 2018.08.28
- lonlatalt = g_grd%lonlatalt      ! lonlatalt(3,g_grd%node) 2018.08.28
- lonorigin = g_meshpara%lonorigin
- latorigin = g_meshpara%latorigin
+!#[1]## set input
+neast     = g_grd%neast
+nsouth    = g_grd%nsouth
+node      = g_grd%node
+allocate(h(node))
+h(1:node) = g_grd%xyz(3,1:node)    ! altitude [m]
+jj = 0
 
-!#[1]## calculate xyz
-do i=1,g_grd%node
-  g_grd%xyz(1,i) = earthrad*dcos(latorigin*d2r)*(lonlatalt(1,i)-lonorigin)*d2r ! eastward [km]
-  g_grd%xyz(2,i) = earthrad*(lonlatalt(2,i)-latorigin)*d2r      ! northward [km]
-  g_grd%xyz(3,i) = lonlatalt(3,i)
+!#[2]## detect coastlines
+j=neast
+do i=1,nsouth-1 ! downward
+  ii=neast*(i-1)+j
+  i1=ii;i3=ii+neast
+  if (h(i1)*h(i3) .lt. 0) jj=jj+1
+end do
+!# bottom boundary
+i=nsouth ! leftward
+do j=neast-1,1,-1
+ ii=neast*(i-1)+j
+ i1=ii;i2=ii+1
+ if (h(i1)*h(i2) .lt. 0)  jj=jj+1
+end do
+!# left boundary
+j=1
+do i=nsouth-1,1,-1 ! upward
+ ii=neast*(i-1)+j
+ i1=ii;i3=ii+neast
+ if (h(i1)*h(i3) .lt. 0)  jj=jj+1
+end do
+!# top boundary
+i=1 ! rightward
+do j=1,neast-1
+ ii=neast*(i-1)+j
+ i1=ii;i2=ii+1
+ if (h(i1)*h(i2) .lt. 0) jj=jj+1
+end do
+!# inside the boundaries
+!# "1"
+do i=2,nsouth-1
+ do j=1,neast-1
+  ii=neast*(i-1)+j
+  i1=ii;i2=ii+1
+! 1
+  if (h(i1)*h(i2) .lt. 0) jj=jj+1
+ end do
+end do
+!# "1"
+do i=1,nsouth-1
+ do j=2,neast-1
+  ii=neast*(i-1)+j
+  i1=ii;i3=ii+neast
+  ! 2
+  if (h(i1)*h(i3) .lt. 0) jj=jj+1
+ end do
 end do
 
-!#[2]## output topo.xyz
-if ( .true. ) then
-open(1,file="topo.xyz")
-write(1,'(3g15.7)') (g_grd%xyz(1,i),g_grd%xyz(2,i),g_grd%xyz(3,i),i=1,g_grd%node)
-close(1)
-end if
+!#[3]## output
+ ncmax = jj + 1000  ! +1000 is added on 2021.07.06
+ write(*,*) "ncmax =",ncmax
+ write(*,*) "### COUNTNCOAST END!! ###"
 
-write(*,*) "### lonlattoxy4 end!###"
 return
 end
+
 !########################################################### makecoast5
+!# way for search of coastline points 2019.02.19
+!# 1. right  boundary
+!# 2. bottom boundary
+!# 3. left   boundary
+!# 4. top    boundary
+!# 5. inside boundaries
 subroutine makecoast5(g_grd,g_coast)
 use coastline_data
 implicit none     ! make points on coastlines
@@ -178,6 +211,7 @@ neast     = g_grd%neast
 nsouth    = g_grd%nsouth
 node      = g_grd%node
 ncmax     = g_coast%ncmax
+
 allocate( x(node),y(node),h(node))
 allocate( cx(ncmax),cy(ncmax)    )
 allocate( ind0(ncmax,2)         ) ! 2018.08.28
@@ -192,13 +226,13 @@ j=neast
 do i=1,nsouth-1 ! downward
   ii=neast*(i-1)+j
   i1=ii;i3=ii+neast
-  if (h(i1)*h(i3) .lt. 0) then
+  if (h(i1)*h(i3) .lt. 0) then ! when coastline exists between i1 and i3
     jj=jj+1
     call interpolate(h(i1),h(i3),x(i1),x(i3),y(i1),y(i3),cxy(1:2))
 !    write(2,*) cxy(1), cxy(2),ii," 2"
     cx(jj)=cxy(1)
     cy(jj)=cxy(2)
-    ind0(jj,1:2)=(/ii,2/)
+    ind0(jj,1:2)=(/ii,2/) ! gebco node ii is upside of jjthe coast node 2019.02.19
     end if
 end do
 !# bottom boundary
@@ -206,13 +240,14 @@ i=nsouth ! leftward
 do j=neast-1,1,-1
  ii=neast*(i-1)+j
  i1=ii;i2=ii+1
+! write(*,*) "i1",i1,"i2",i2,"h(i1)",h(i1),"h(i2)",h(i2),"nsouth",nsouth,"neast",neast
  if (h(i1)*h(i2) .lt. 0) then
   jj=jj+1
   call interpolate(h(i1),h(i2),x(i1),x(i2),y(i1),y(i2),cxy(1:2))
   !write(2,*) cxy(1), cxy(2),ii," 1"
   cx(jj)=cxy(1)
   cy(jj)=cxy(2)
-  ind0(jj,1:2)=(/ii,1/)
+  ind0(jj,1:2)=(/ii,1/) ! gebco node ii is left of jjthe coast node 2019.02.19
  end if
 end do
 !# left boundary
@@ -291,7 +326,16 @@ write(*,*) "### makecoast5 end! ###"
  g_coast%cxy(1,1:ncmax) = cy(1:ncmax) ! east
  g_coast%cxy(2,1:ncmax) = cx(1:ncmax) ! north
  g_coast%ncoast = ncoast
- g_coast%nbound = nbound
+ g_coast%nbound = nbound ! # of coastline nodes at calculation boundaries
+
+!#[4]## output coast node
+ if (.true.) then
+  open(2,file="coast.dat")
+  do i=1,g_coast%ncoast
+   write(2,*) g_coast%cxy(1:2,i),g_coast%ind(i,1:2)
+  end do
+  close(2)
+ end if
 
 return
 end subroutine makecoast5
@@ -330,6 +374,7 @@ integer(4),allocatable,dimension(:,:)  :: ind0, label, ind
 real(8),   allocatable,dimension(:)    :: cx,cy
 integer(4)                             :: nbound,node,neast,i,l,lpmax, ncmax, ncoast
 real(8),   allocatable,dimension(:)    :: h
+logical                                :: iflag_topright_land ! 2019.02.25
 
 !#[0]## set input
  ! g_coast
@@ -351,10 +396,11 @@ real(8),   allocatable,dimension(:)    :: h
  h(:)   = g_grd%xyz(3,:) ! altitude [m]
  label  = 0
  lpoly0 = 0
+ iflag_topright_land = g_grd%iflag_topright_land ! 2019.02.25
 
 !#[1]## not closed polygon, which touches boundaries
  do i=1,nbound
-  if (label(i,1) .eq. 0) then
+  if (label(i,1) .eq. 0) then ! when i-th coastline node doesn't belong to any polygons 2019.02.19
    call loopelement(i,lpoly0,node,neast,ncmax,ncoast,h,label,ind0,cx,cy,lpoly,xpoly,ypoly,ind,lpmax)
   end if
  end do
@@ -366,36 +412,43 @@ real(8),   allocatable,dimension(:)    :: h
   end if
  end do
 
- !#[3]## set label to g_coast
-  g_coast%label = label
+!#[4]## set label to g_coast
+!  g_coast%label = label ! commented out 2019.02.25
   g_coast%ind_r = ind
   g_poly%lpoly0 = lpoly0
-  g_poly%lpoly = lpoly
+  g_poly%lpoly  = lpoly
   g_poly%xypoly(1,:,:) = ypoly
   g_poly%xypoly(2,:,:) = xpoly
+  g_poly%nclose = nbound/2      ! 2019.02.25
+  g_poly%iflag_topright_land = iflag_topright_land ! 2019.02.28
 
  write(*,*) "Total number of polygon is",lpoly0
  write(*,*) "### makepolygon7 end!###"
 
-return
+ return
 end subroutine makepolygon7
-!############################################### outpolygon8
-subroutine outpolygon8(g_poly,g_coast,head,inum)
-use coastline_data
-implicit none
-type(poly_data),       intent(in)     :: g_poly
-type(coast_data),      intent(in)     :: g_coast
-character(70),         intent(in)     :: head
-integer(4),            intent(in)     :: inum
-integer(4)                            :: ncoast, nbound, ncmax
-integer(4)                            :: nclose,iclose,ii,jj,ij,i,j
-integer(4),allocatable,dimension(:,:) :: ind
-character(1)                          :: num
-character(70)                         :: polygonfile
 
-write(num,'(i1.1)') inum
-polygonfile=head(1:len_trim(head))//num//".dat"
-open(1,file=polygonfile)
+!############################################### outpolygon8
+ subroutine outpolygon8(g_poly,g_coast,head,inum)
+ use coastline_data
+ implicit none
+ type(poly_data),       intent(in)     :: g_poly
+ type(coast_data),      intent(in)     :: g_coast
+ character(70),         intent(in)     :: head
+ integer(4),            intent(in)     :: inum
+ integer(4)                            :: ncoast, nbound, ncmax
+ integer(4)                            :: nclose,iclose,ii,jj,ij,i,j
+ integer(4),allocatable,dimension(:,:) :: ind
+ character(1)                          :: num
+ character(70)                         :: polygonfile
+ character(70)                         :: polygon_numfile ! 2019.02.27
+ real(8)                               :: x_sum,y_sum     ! 2019.02.27
+
+ write(num,'(i1.1)') inum
+ polygonfile=head(1:len_trim(head))//num//".dat"
+ polygon_numfile=head(1:len_trim(head))//num//"_num.dat" ! 2019.02.27
+ open(1,file=polygonfile)
+ open(2,file=polygon_numfile) ! 2019.02.27
 
 !#[1]## set input
   ncmax  = g_coast%ncmax
@@ -403,211 +456,421 @@ open(1,file=polygonfile)
   nbound = g_coast%nbound
   allocate( ind(ncmax,2)) ! 2018.08.28
   ind    = g_coast%ind_r
+  nclose = g_poly%nclose  ! 2019.02.25
 
 !# polygon.dat read
-nclose=nbound/2
-write(*,*) "nclose=",nclose
-ii=0
-do i=1,g_poly%lpoly0
+ write(*,*) "nclose=",nclose
+ ii=0
+ do i=1,g_poly%lpoly0
    iclose=1
    if ( i .le. nclose ) iclose=0
    !# iclose=0 -> polygon is not closed because reaching calculation boundaries
    write(1,*) i,g_poly%lpoly(i),iclose
 !  if ( iclose .eq. 0 ) nclose=nclose+1
+   x_sum = 0.d0 ! 2019.02.27
+   y_sum = 0.d0 ! 2019.02.27
    do j=1,g_poly%lpoly(i)
      ii=ii+1      !# ii : new ncoast node number
-      write(1,*) j, g_poly%xypoly(2,i,j),g_poly%xypoly(1,i,j),ind(ii,1),ind(ii,2)
+      write(1,'(i8,2g15.7,2i10)') j, g_poly%xypoly(2,i,j),g_poly%xypoly(1,i,j),ind(ii,1),ind(ii,2)!2019.02.19
+      x_sum = x_sum + g_poly%xypoly(1,i,j)/g_poly%lpoly(i) ! 2019.02.27
+      y_sum = y_sum + g_poly%xypoly(2,i,j)/g_poly%lpoly(i) ! 2019.02.27
    end do
-end do
-close(1)
-!# Now the ncoast coastline nodes are ordered 
-!    to be {1 2 3},{4,5,6,7,8,9}, where {} means one polygon
-if (ncoast .ne. ii) then
+   write(2,*) x_sum,y_sum, i ! 2019.02.27
+ end do
+ close(1)
+ close(2) ! 2019.02.27
+ !# Now the ncoast coastline nodes are ordered
+ !    to be {1 2 3},{4,5,6,7,8,9}, where {} means one polygon
+ if (ncoast .ne. ii) then
   write(*,*) "GEGEGE!!! ncoast is not equal to ii!!ncoast=",ncoast,"ii=",ii
   stop
-end if
+ end if
+
 !# polygon.dat read end!
-if ( nbound/2 .ne. nclose) then
+ if ( nbound/2 .ne. nclose) then
   write(*,*) "GEGEGE nbound/2 is not equal to nclose!!! nclose=",nclose,"nbound=",nbound
   stop
-end if
-write(*,*) "# of coastal nodes on the calculation boundaries is",nbound
-write(*,*) "# of boundary polygon (nclose) is",nclose
-write(*,*) "# out put",polygonfile
-write(*,*) "### outpolygon8 end!###"
+ end if
+ write(*,*) "# of coastal nodes on the calculation boundaries is",nbound
+ write(*,*) "# of boundary polygon (nclose) is",nclose
+ write(*,'(a,a)') " # out put ",trim(polygonfile) ! 2019.03.05
+ write(*,*) "### outpolygon8 end!###"
 
 return
 
 end subroutine outpolygon8
 !########################################################### outpolygon12
-subroutine outpolygon12(g_poly,head,inum)
-use coastline_data
-implicit none
-type(poly_data),intent(in)  :: g_poly
-character(70),  intent(in)  :: head
-integer(4),     intent(in)  :: inum
-integer(4)                  :: i,k,iclose
-character(1)                :: num
-character(70)               :: polygonfile
+ subroutine outpolygon12(g_poly,head,inum)
+ use coastline_data
+ implicit none
+ type(poly_data),intent(in)  :: g_poly
+ character(70),  intent(in)  :: head
+ integer(4),     intent(in)  :: inum
+ integer(4)                  :: i,k,iclose
+ character(1)                :: num
+ character(70)               :: polygonfile
 !# iclose : 0 -> not closed polygon, 1 -> closed polygon
 
 !#[1]## setting
-write(num,'(i1)') inum
-polygonfile=head(1:len_trim(head))//num//".dat"
+ write(num,'(i1)') inum
+ polygonfile=head(1:len_trim(head))//num//".dat"
 
 !#[2]## output
-open(1,file=polygonfile)
-do i=1,g_poly%lpoly0
- iclose=1 ! closed
- if ( i .le. g_poly%nclose) iclose=0 ! unclosed
- write(1,'(3i7)') i,g_poly%lpoly(i),iclose
- write(1,'(i7,2g15.7)')(k,g_poly%xypoly(2,i,k),g_poly%xypoly(1,i,k),k=1,g_poly%lpoly(i))
-end do
-close(1)
+ open(1,file=polygonfile)
+ do i=1,g_poly%lpoly0
+  iclose=1 ! closed
+  if ( i .le. g_poly%nclose) iclose=0 ! unclosed
+  write(1,'(3i7)') i,g_poly%lpoly(i),iclose
+  write(1,'(i7,2g15.7)')(k,g_poly%xypoly(2,i,k),g_poly%xypoly(1,i,k),k=1,g_poly%lpoly(i))
+ end do
+ close(1)
 
-write(*,*) "### outpolygon12 end! ###"
-return
-end subroutine outpolygon12
+ write(*,*) "### outpolygon12 end! ###"
+ return
+
+ end subroutine outpolygon12
 
 !########################################################### judgeocean9
-subroutine judgeocean9(iflgsealand,g_coast,g_poly,g_grd,lpmax)
-!###        judge if polygons are in land or oceans        ###
-! iflgsealand : 0 -> not determined, 1 -> in ocean, 2 -> in land
-! iflgcoastpresence : 0 -> no coastline, i -> i-th polygon coastline exists
-! iflgcoastpresence(i,1) : right side of the node, (i,2) : downside of the node
-use coastline_data
-implicit none
-type(poly_data),       intent(inout)  :: g_poly
-type(coast_data),      intent(in)     :: g_coast
-type(grid_data),       intent(in)     :: g_grd
-integer(4),            intent(in)     :: lpmax
-integer(4),            intent(inout)  :: iflgsealand(lpmax)
-integer(4)                            :: k,i,j,istart,ii,jj,ij,lpoly0,ncmax,neast,node
-integer(4),allocatable,dimension(:)   :: lpoly
-integer(4),allocatable,dimension(:,:) :: ind,iflgcoastpresence
+ subroutine judgeocean9(iflag_coast_required,g_coast,g_poly,g_grd,lpmax,g_meshpara) ! 2019.02.28
+ !###        judge if polygons are in land or oceans        ###
+ ! iflgsealand : 0 -> not determined, 1 -> in ocean, 2 -> in land
+ ! iflgcoastpresence : 0 -> no coastline, i -> i-th polygon coastline exists
+ ! iflgcoastpresence(i,1) : right side of the node, (i,2) : downside of the node
+ use coastline_data
+ use param_mesh ! 2019.02.28
+ implicit none
+ type(meshpara),        intent(in)     :: g_meshpara ! 2019.02.28
+ type(poly_data),       intent(inout)  :: g_poly
+ type(coast_data),      intent(inout)  :: g_coast
+ type(grid_data),       intent(in)     :: g_grd
+ integer(4),            intent(in)     :: lpmax
+ logical,               intent(out)    :: iflag_coast_required(lpmax) ! 2021.05.29
+ integer(4)                            :: k,i,j,istart,ii,jj,lpoly0,ncmax,neast,node,nsouth,pid
+ integer(4)                            :: irow,icolm,nclose   ! 2019.02.25
+ integer(4),allocatable,dimension(:)   :: lpoly
+ integer(4),allocatable,dimension(:,:) :: ind
+ logical,   allocatable,dimension(:,:) :: iflgcoastpresence     ! 2019.02.25
+ integer,   allocatable,dimension(:,:) :: iflgclosedpolygon_pid ! 2019.02.27
+ logical                               :: iflag_topright_land ! 2019.02.25
+ real(8)   ,allocatable,dimension(:,:) :: loc        ! 2019.02.25
+ integer(4)                            :: ln(2)      ! 2019.02.25
+ real(8)                               :: loc_current, loc_end
+ real(8),   allocatable,dimension(:,:,:) :: xypoly ! 2019.02.28
+ logical,   allocatable,dimension(:)   :: cross_closed_once ! 2019.02.27
+ logical :: cross_closed_once_exist ! 2019.02.27
+ real(8) :: len_threshold,len_coast ! 2019.02.28
+ real(8) :: xbound(4),ybound(4),dl     ! 2019.02.28
+ real(8),allocatable,dimension(:) :: len_poly ! 2019.02.28
+ integer(4) :: ishift ! 2019.02.28
 
-!#[1]## set input
- allocate(lpoly(lpmax)) ! 2018.08.28
- node   = g_grd%node
- ncmax  = g_coast%ncmax ! 2018.08.28
+!#[0]## set input
+ allocate(lpoly(lpmax))          ! 2018.08.28
+ node       = g_grd%node         ! node = neast * nsouth 2019.02.25
+ ncmax      = g_coast%ncmax      ! 2018.08.28
+ allocate( ind(ncmax,2))         ! 2018.08.28
+ neast      = g_grd%neast
+ nsouth     = g_grd%nsouth       ! 2019.02.25
+ ind        = g_coast%ind_r
+ lpoly      = g_poly%lpoly
+ lpoly0     = g_poly%lpoly0
+ nclose     = g_poly%nclose      ! 2019.02.25
+ xbound     = g_meshpara%xbound
+ ybound     = g_meshpara%ybound
+ len_threshold       = min(xbound(4)-xbound(1),ybound(4)-ybound(1)) ! 2019.02.28
+ iflag_topright_land = g_grd%iflag_topright_land ! 2019.02.25
+
+ allocate( xypoly(2,lpmax,ncmax))
+ xypoly     = g_poly%xypoly
+ iflag_coast_required(:) = .false. ! all are not reuquired initially 2019.02.28
+ write(*,*) "## JUDGEOCEAN9 START!1 ##" ! 2019.03.06
+
+!# [1] ### set loc(1:nclose,1:2)
+ if ( nclose .eq. 0 ) then       ! 2019.03.06
+  write(*,*) "## nclose = 0 and no polygons reaching calculation boundaries ##" ! 2019.03.06
+ else                            ! 2019.03.06
+  allocate(loc(nclose,2)   )     ! 2018.08.28
+  loc(:,:) = 0.d0
+  ii       = 0
+  do i=1,nclose
+   ii=ii+lpoly(i)    ! ii is accumulated number of unclosed polygon points, comment on Oct. 24, 2015
+   ln(1)=ii-lpoly(i)+1; ln(2)=ii ! ln(1) is node id of first node in ith polygon, ln(2) is the end node id
+   do j=1,2  ! start and end points of i-th polygons
+    jj = ind(ln(j),1)
+    irow  = (jj - 1)/neast + 1    ! 2019.02.20
+    icolm = jj - (irow - 1)*neast ! 2019.02.20
+    if ( icolm .eq. neast )                      loc(i,j)=(irow -1 + 0.5 )/(nsouth-1)                  ! right
+    if ( irow  .eq. nsouth )                     loc(i,j)=((neast -1.) - (icolm - 1.+0.5))/(neast-1)+1. ! bottom
+    if ( icolm .eq. 1 .and. ind(ln(j),2) .eq. 2) loc(i,j)=((nsouth-1.) - (irow  - 1.+0.5))/(nsouth-1)+2.! left
+    if ( irow  .eq. 1 .and. ind(ln(j),2) .eq. 1) loc(i,j)=(icolm -1+0.5)/(neast-1.)+3.                 ! top
+   end do
+   if (loc(i,1) .eq. 0.d0 .or. loc(i,2) .eq. 0.d0) goto 999
+   write(*,*) "polygon #", i, "loc(i,1)=",loc(i,1)
+   write(*,*) "polygon #", i, "loc(i,2)=",loc(i,2)
+  end do
+
+!# [2] ## set len_poly 2019.02.28
+  allocate(len_poly(lpoly0))
+  len_poly = 0.d0
+  do i=1,lpoly0
+   do j=1,lpoly(i) - 1
+    dl = sqrt((xypoly(1,i,j+1) - xypoly(1,i,j))**2. + (xypoly(2,i,j+1) - xypoly(2,i,j))**2. )
+    len_poly(i)=len_poly(i)+ dl
+   end do
+  end do
+
+!# [3] ## set iflag_coast_required(1:nclose) by deleaneating ocean 2019.02.25
+  istart = 1
+  15 continue
+  loc_current = 0.d0
+  loc_end     = 4.0
+  len_coast   = 0.d0 ! km
+  write(*,'(a,l3)') " iflag_topright_land",iflag_topright_land
+  do i=istart,nclose
+!   write(*,*) "loc_current",loc_current,"loc_end",loc_end
+   if ( i .eq. istart .and. iflag_topright_land ) then
+    loc_end     = loc(i,2)
+    iflag_coast_required(i)=.true.
+    loc_current = loc(i,1)
+    len_coast   = len_poly(1)
+    goto 10
+   end if
+   if ( loc(i,1) .gt. loc_current .and. loc(i,1) .lt. loc_end) then
+    iflag_coast_required(i)=.true.
+    loc_current = loc(i,2)
+    len_coast   = len_coast + len_poly(i)
+   end if
+   10 continue
+!  write(*,'(a,i,a,l3)') "polygon #",i," iflag_coast_required =",iflag_coast_required(i) ! 2019.02.27
+  end do
+  !# check coastline is longer than len_threshold 2019.02.28
+  if ( len_coast .lt. len_threshold ) then
+   iflag_coast_required = .false.
+   istart = istart + 1
+   if ( istart .gt. nclose ) then
+    write(*,*) "no coastline is identified in nclose polygons with len_threshold",len_threshold
+    goto 16
+   end if
+   goto 15
+  end if
+  16 continue !2019.02.28
+  write(*,*) "istart/nclose",istart,"/",nclose
+
+!#[3]## reverse the node order for first boundary polygon when the top right corner is in land 2019.02.28
+ if ( iflag_topright_land ) then
+  xypoly(1:2,istart,1:lpoly(istart)) = xypoly(1:2,istart,lpoly(istart):1:-1)
+  ishift=0
+  do i=1,istart-1
+   ishift = ishift + lpoly(i)
+  end do
+  ind(ishift+1:ishift+lpoly(istart),1:2) = ind(ishift+lpoly(istart):ishift+1:-1,1:2)
+  loc(istart,1:2) = loc(istart,2:1:-1)
+ end if
+
+ end if ! nclose >= 1 end ! 2019.03.06
+
+!# [3] ## set iflag_coast_required(nclose+1:lpoly0)
+
+ !# [3-1] ## set iflgcoastpresence
  allocate( iflgcoastpresence(node,2) ) ! 2018.08.28
- allocate( ind(ncmax,2))             ! 2018.08.28
- neast  = g_grd%neast
- ind    = g_coast%ind_r
- lpoly  = g_poly%lpoly
- lpoly0 = g_poly%lpoly0
-
-!# generate iflgcoastpresence
-iflgcoastpresence(:,:)=0
-k=0
-do i=1,lpoly0
- do j=1,lpoly(i)
-  k=k+1
-  if (ind(k,2) .eq. 1) iflgcoastpresence(ind(k,1),1)=i
-  if (ind(k,2) .eq. 2) iflgcoastpresence(ind(k,1),2)=i
+ iflgcoastpresence = .false.           ! initial value
+ k = 0
+ do i=1,nclose                         ! this loop is skepped when nclose = 0
+  do j=1,lpoly(i)
+   k=k+1
+   if ( iflag_coast_required(i) ) then ! when polygons are ocean-land boundary
+    if (ind(k,2) .eq. 1) iflgcoastpresence(ind(k,1),1)=.true. ! right side exist
+    if (ind(k,2) .eq. 2) iflgcoastpresence(ind(k,1),2)=.true. ! down  side exist
+   end if
+  end do
  end do
-end do
-!# generate iflgsealand
-iflgsealand(:)=0
-j=0
-do i=1,lpoly0
-! j is the last coast line node in i-th polygon
-j=j+lpoly(i)
-k=0
-istart=ind(j,1)
-ij=mod(istart,neast)
-if ( istart .lt. neast ) goto 86 ! top boundary
-do ii=istart/neast,1,-1 ! upward
-jj=neast*(ii-1)+ij
-if ( iflgcoastpresence(jj,2) .ne. i .and. iflgcoastpresence(jj,2) .ne. 0) k=k+1 ! how many times coastlines are crossed
-end do
-86 continue
-if ( ij .eq. 0) goto 87
-do jj=ij,neast ! rightward
-if ( iflgcoastpresence(jj,1) .ne. i .and. iflgcoastpresence(jj,1) .ne. 0) k=k+1 ! how many times coastlines are crossed
-end do
-87 continue
-iflgsealand(i)=mod(k,2)+1
-!write(*,*) "polygon #",i,"iflgsealand=",iflgsealand(i)
-end do
-write(*,*)"### judgeocean9 end!  ###"
+
+ !# [3-2] ## closed polygons
+ allocate( iflgclosedpolygon_pid(node,2) ) ! 2019.02.27
+ iflgclosedpolygon_pid = 0
+ do i=nclose+1,lpoly0
+  do j=1,lpoly(i)
+   k=k+1
+    if (ind(k,2) .eq. 1)  iflgclosedpolygon_pid(ind(k,1),1)=i  ! 2019.02.27
+    if (ind(k,2) .eq. 2)  iflgclosedpolygon_pid(ind(k,1),2)=i  ! 2019.02.27
+  end do
+ end do
+
+!# [3-3] ## set iflag_coast_required
+ j=0
+ allocate( cross_closed_once(lpoly0) ) ! 2019.02.27
+ do i=1,nclose      ! this loop is skipped when nclose = 0
+  j = j + lpoly(i)
+ end do
+ do i=nclose + 1,lpoly0                 ! i polygon loop
+  cross_closed_once = .false.           ! 2019.02.27
+  k=0
+  j=j+lpoly(i)
+  istart = ind(j,1) ! node id in original gebco file for j-th coastline node id
+  irow   = (istart - 1)/neast + 1       ! 2019.02.20
+  icolm  = istart - (irow - 1)*neast    ! 2019.02.20
+
+  !# upward check between ii and ii + 1 th row
+  do ii=irow,1,-1 ! upward ; begin with jj = istart
+   jj=neast*(ii-1)+icolm  ! 2019.02.20
+   if ( iflgcoastpresence(jj,2) ) then
+    k=k+1 ! how many times coastlines are crossed
+!    write(*,*) "k",k,"cross ii -",ii
+   end if
+   if ( iflgclosedpolygon_pid(jj,2) .gt. 0 .and. iflgclosedpolygon_pid(jj,2) .ne. i ) then ! 2019.02.27
+    pid = iflgclosedpolygon_pid(jj,2)
+    if ( cross_closed_once(pid) ) then
+     cross_closed_once(pid) = .false. ! second cross
+    else
+     cross_closed_once(pid) = .true.  ! first cross
+    end if
+   end if
+  end do ! ii loop end
+
+  !# rightward check between jj and jj + 1 th row
+  do jj=icolm,neast-1               ! rightward 2019.02.20
+   if ( iflgcoastpresence(jj,1) ) then
+    k=k+1
+!    write(*,*) "k",k,"cross jj |",jj
+   end if
+   if ( iflgclosedpolygon_pid(jj,1) .gt. 0 .and. iflgclosedpolygon_pid(jj,2) .ne. i ) then ! 2019.02.27
+    pid = iflgclosedpolygon_pid(jj,1)
+    if ( cross_closed_once(pid) ) then
+     cross_closed_once(pid) = .false. ! second cross
+    else
+     cross_closed_once(pid) = .true.  ! first cross
+    end if
+   end if
+  end do ! jj loop end
+
+  !#  if top right is in ocean even k survive   2019.02.25
+  !#  if top right is in land  odd  k survive
+  if ( mod(k,2) .eq. 0 ) then ! k is even
+   if ( .not. iflag_topright_land ) iflag_coast_required(i) = .true.
+  else                        ! k is odd
+   if (       iflag_topright_land ) iflag_coast_required(i) = .true.
+  end if
+  !# check whether a closed polygon is whithin another closed polygons
+  cross_closed_once_exist=.false.
+  do jj=nclose+1,lpoly0
+   if ( cross_closed_once(jj) ) cross_closed_once_exist=.true.
+  end do
+  if ( cross_closed_once_exist ) iflag_coast_required(i) = .false.
+
+  !write(*,'(a,i5,a,l3,a,i5,a,2i5)') "polygon #",i," iflag_coast_required(i)",iflag_coast_required(i)," k",k," irow,icolm",irow,icolm
+
+ end do ! i polygon loop end
+
+ do i=1,nclose ! skipped when nclose = 0
+   write(*,'(i5,a,l3,a,2g15.7)') i,"iflag_coast_required(i)",iflag_coast_required(i)," loc(i,1:2)",loc(i,1:2)
+ end do
+
+
+ !# set loc to h_poly 2019.02.25
+ if ( nclose .ge. 1 ) g_poly%loc = loc ! 2019.03.06
+ g_poly%xypoly  = xypoly      ! 2019.02.28
+ g_coast%ind_r  = ind         ! 2019.02.28
+
+ write(*,*)"### judgeocean9 end!  ###"
+
 return
+
+999 continue ! moved to here on Feb 20, 2019
+    write(*,*) "GEGEGE loc is not set!!"
+    write(*,*) "i=",i,"loc(i,1)=",loc(i,1),"loc(i,2)=",loc(i,2)
+    write(*,*) "ln(1)=",ln(1),"ln(2)=",ln(2)
+    write(*,*) "ind(ln(1),1)=",ind(ln(1),1),"ind(ln(2),1)",ind(ln(2),1)
+    write(*,*) "ind(ln(1),2)=",ind(ln(1),2),"ind(ln(2),2)",ind(ln(2),2)
+    write(*,*) "lpoly(i)=",lpoly(i)
+    stop
 
 end subroutine judgeocean9
 
 !########################################################### landpolygon10
-subroutine landpolygon10(iflgsealand,g_poly,g_coast,lpmax)
-!###       exclude polygons in lands (iflgsealand=2)       ###
+subroutine landpolygon10(iflag_coast_required,g_poly,g_coast,lpmax)  ! 2019.02.25
+!# eliminate polygons with iflag_coast_required = .false.
 use coastline_data
 implicit none
 type(coast_data),      intent(inout)    :: g_coast
 type(poly_data),       intent(inout)    :: g_poly
 integer(4),            intent(in)       :: lpmax
-integer(4),            intent(in)       :: iflgsealand(lpmax)
+logical,               intent(in)       :: iflag_coast_required(lpmax)      ! 2019.02.25
 integer(4)                              :: lpoly0, lpoly0n, nboundn, ncoastn
-integer(4)                              :: ncoast,nclose,nbound,ncmax
+integer(4)                              :: ncoast,nclose,nbound,ncmax, nclosen ! 2019.02.25
 integer(4)                              :: i,ii,jj,k,kk
 integer(4),allocatable,dimension(:,:)   :: ind,indn
 integer(4),            dimension(lpmax) :: lpolyn,lpoly
 real(8),   allocatable,dimension(:,:)   :: xpoly, ypoly, xpolyn, ypolyn
+real(8),   allocatable,dimension(:,:)   :: loc,locn                         ! 2019.02.25
 
 !#[1]## set input
  ncmax  = g_coast%ncmax ! 2018.08.28
  allocate( ind(ncmax,2), indn(ncmax,2))              ! 2018.08.28
  allocate( xpoly( lpmax,ncmax), ypoly( lpmax,ncmax)) ! 2018.08.28
  allocate( xpolyn(lpmax,ncmax), ypolyn(lpmax,ncmax)) ! 2018.08.28
- ncoast = g_coast%ncoast
- nbound = g_coast%nbound
+ ncoast = g_coast%ncoast ! total # of coastline nodes
+ nbound = g_coast%nbound ! # of coastline nodes at calculation boundaries
  ind    = g_coast%ind_r
  lpoly0 = g_poly%lpoly0
  lpoly  = g_poly%lpoly
  xpoly  = g_poly%xypoly(2,:,:) ! north
  ypoly  = g_poly%xypoly(1,:,:) ! east
+ nclose = nbound/2 ! # of unclosed polygons, which touch calculation boundaries 2019.02.25
+ if (nclose .ge. 1 ) then ! 2019.03.06
+  allocate( loc(nclose,2), locn(nclose,2) )
+  loc    = g_poly%loc     ! 2019.02.25
+ end if                   ! 2019.03.06
 
 !#[2]##
-nclose=nbound/2
-nboundn=nbound
-xpolyn(:,:)=0.d0;ypolyn(:,:)=0.d0
-indn(:,:)=0;lpolyn(:)=0;ncoastn=0
-ii=0;jj=0;kk=0
-write(*,*) "lpoly0=",lpoly0
-do i=1,lpoly0
- !write(*,*) "lpoly0=",lpoly0,"i=",i
- if (iflgsealand(i) .eq. 1) then ! polygon is in the ocean
-  jj=jj+1
-  !xpolyn(jj,1:ncmax)=xpoly(i,1:ncmax)
-  !ypolyn(jj,1:ncmax)=ypoly(i,1:ncmax)
-  xpolyn(jj,1:lpoly(i))=xpoly(i,1:lpoly(i)) ! July 15, 2015, the above 2 lines are replaced by these 2 lines
-  ypolyn(jj,1:lpoly(i))=ypoly(i,1:lpoly(i))
-  indn(ii+1:ii+lpoly(i),1:2)=ind(kk+1:kk+lpoly(i),1:2)
-  lpolyn(jj)=lpoly(i)
-  lpoly0n=jj
-  ncoastn=ncoastn+lpoly(i)
-  !write(*,*) "check3"
-  ii=ii+lpoly(i)
- else if ( iflgsealand(i) .eq. 2 .and. i*2 .le. nbound) then
-  nclose=nclose-1
-  nboundn=nboundn-1
- end if
- kk=kk+lpoly(i)
-end do
+ xpolyn(:,:)=0.d0;ypolyn(:,:)=0.d0
+ indn(:,:)=0;lpolyn(:)=0;ncoastn=0
+ ii=0;jj=0;kk=0
+ nboundn = 0
+ nclosen = 0   ! 2019.02.25
+ write(*,*) "lpoly0=",lpoly0
+ do i=1,lpoly0
+  !write(*,*) "lpoly0=",lpoly0,"i=",i
+  if ( iflag_coast_required(i) ) then ! 2019.02.25
+   jj=jj+1
+   !xpolyn(jj,1:ncmax)=xpoly(i,1:ncmax)
+   !ypolyn(jj,1:ncmax)=ypoly(i,1:ncmax)
+   xpolyn(jj,1:lpoly(i))      = xpoly(i,1:lpoly(i)) ! July 15, 2015, the above 2 lines are replaced by these 2 lines
+   ypolyn(jj,1:lpoly(i))      = ypoly(i,1:lpoly(i))
+   indn(ii+1:ii+lpoly(i),1:2) = ind(kk+1:kk+lpoly(i),1:2)
+   lpolyn(jj)    = lpoly(i)
+   lpoly0n       = jj
+   ncoastn       = ncoastn + lpoly(i)
+   ii            = ii + lpoly(i)
+   if ( i .le. nclose ) then      ! 2019.02.25
+    nclosen      = nclosen + 1
+    nboundn      = nboundn + 2
+    locn(jj,1:2) = loc(i,1:2) ! 2019.02.25
+   end if
+  end if
+  kk = kk + lpoly(i)
+ end do
 
 ! set new polygon data
- g_coast%ind_r(:,:)=indn(:,:)
- g_coast%nbound=nboundn
- g_coast%ncoast=ncoastn
+ g_coast%ind_r(:,:)   = indn(:,:)
+ g_coast%nbound       = nboundn
+ g_coast%ncoast       = ncoastn
 !
  g_poly%lpoly0        = lpoly0n
  g_poly%xypoly(2,:,:) = xpolyn(:,:) ! north
  g_poly%xypoly(1,:,:) = ypolyn(:,:) ! east
  g_poly%lpoly(:)      = lpolyn(:)
- g_poly%nclose        = nclose             ! nclose is set
+ g_poly%nclose        = nclosen            ! new nclose is set 2019.02.25
+ if ( nclosen .lt. nclose) then     ! when nclose is reduced 2019.02.25, here is skipped nclosen=nclose=0
+  deallocate( g_poly%loc )
+  allocate(   g_poly%loc(nclosen,2) )
+  g_poly%loc(1:nclosen,1:2) = locn(1:nclosen,1:2)
+ end if
 
-write(*,*) "Total number of polygon is reduced to",lpoly0
-write(*,*) "# of coastal node is reduced to",ncoast
-write(*,*) "# of coastal nodes on the calculation boundaries is",nbound
-write(*,*) "# of boundary polygon (nclose) is",nclose
-write(*,*) "### landpolygon10 end!###"
+ write(*,*) "Total number of polygon is reduced to",lpoly0
+ write(*,*) "# of coastal node is reduced to",ncoast
+ write(*,*) "# of coastal nodes on the calculation boundaries is",nbound
+ write(*,*) "# of boundary polygon (nclose) is",nclosen
+ write(*,*) "### landpolygon10 end!###"
+
 return
 
 end subroutine landpolygon10
@@ -636,13 +899,15 @@ real(8),   allocatable,dimension(:)     :: tnn
 real(8)                                 :: sizecoastratio
 type(bgele)                             :: pos
 integer(4),allocatable,dimension(:,:)   :: ind
+real(8),   allocatable,dimension(:,:)   :: loc ! 2019.02.25
+logical                                 :: iflag_topright_land ! 2019.02.28
 
 !#[1]## set input
   ncoast = g_coast%ncoast
   ncmax  = g_coast%ncmax
   nclose = g_poly%nclose
   lpoly0 = g_poly%lpoly0
-  allocate( tnn(ncoast),ind(ncmax,2),ind2(nclose,2,2) )
+  allocate( tnn(ncoast+1000),ind(ncmax,2))! 2021.11.08 +1000 is added
   allocate( lpoly(lpoly0), lpoly2(lpoly0))
   allocate( xpoly( lpoly0,ncmax), ypoly( lpoly0,ncmax))
   allocate( xpoly2(lpoly0,ncmax), ypoly2(lpoly0,ncmax))
@@ -650,26 +915,32 @@ integer(4),allocatable,dimension(:,:)   :: ind
   xpoly  = g_poly%xypoly(2,:,:)
   ypoly  = g_poly%xypoly(1,:,:)
   lpoly  = g_poly%lpoly
-  sizecoastratio = g_meshpara%sizecoastratio
+  if ( nclose .ge. 1) then       ! 2019.03.06
+   allocate( ind2(nclose,2,2) )  ! 2019.03.06
+   allocate( loc(nclose,2) )     ! 2019.02.25
+   loc    = g_poly%loc           ! 2019.02.25
+   ind2(:,:,:)=0.d0              ! 2019.03.06
+  end if
+  sizecoastratio      = g_meshpara%sizecoastratio
+  iflag_topright_land = g_poly%iflag_topright_land ! 2019.02.28
 
 !#
 ! scale : length from the origin that permits sparce meshes
-xpoly2(:,:)=0.d0 ; ypoly2(:,:)=0.d0 ; lpoly2(:)=0 ; ind2(:,:,:)=0.d0
-lp0=lpoly0
-!write(*,*) "lp0=lpoly0,",lpoly0
-lp0n=0 ! new lpoly0, which excludes small islands
-nclose2=nclose ! # of unclosed polygons
-iind=0 ! iind is for accumulated lpoly
-do i=1,lp0 ! polygon loop start!
-  iind=iind+lpoly(i)
+ xpoly2(:,:)=0.d0 ; ypoly2(:,:)=0.d0 ; lpoly2(:)=0
+ lp0     = lpoly0
+ lp0n    = 0      ! new lpoly0, which excludes small islands
+ nclose2 = nclose ! # of unclosed polygons
+ iind    = 0      ! iind is for accumulated lpoly
+ do i=1,lp0 ! polygon loop start!
+  iind = iind + lpoly(i)
   !write(*,*) "investigate",i,"-th polygon"
   !write(*,'(a,i6,a,i6)') ("ind(1)=",ind(k,1),"ind(k,2)",ind(k,2),k=iind-lpoly(i)+1,iind)
   !do i=1,5 ! polygon loop start!
   !  write(*,*) "i=",i,"loop start! lpoly(i)=",lpoly(i)
-  lp0n=lp0n+1
-  lp=lpoly(i)
-  lp1=lp ! if polygon is not closed, lp1 should be lp
-  if ( i .gt. nclose )lp1=lp+1  ! if pooygon is closed, count the start node twice and refer it to both the start and the end
+  lp0n = lp0n+1
+  lp   = lpoly(i)
+  lp1  = lp ! if polygon is not closed, lp1 should be lp
+  if ( i .gt. nclose ) lp1=lp+1  ! if pooygon is closed, count the start node twice and refer it to both start and end
   allocate(t(lp1),Y(lp1),Y2(lp1),X(lp1),X2(lp1))
   X(1:lp)=xpoly(i,1:lp)
   Y(1:lp)=ypoly(i,1:lp)
@@ -690,10 +961,10 @@ do i=1,lp0 ! polygon loop start!
   ! make tnn
   do while (tnn(lpn1) .lt. t(lp1))
     lpn1=lpn1+1
-    if (ncoast .lt. lpn1) then
-      write(*,*) "GEGEGE ncoast=",ncoast,"is less than lpn=",lpn
-      stop
-    end if
+!    if (ncoast .lt. lpn1) then
+!      write(*,*) "GEGEGE ncoast=",ncoast,"is less than lpn1=",lpn1 ! 2021.11.07
+!      stop
+!    end if
     call SPLINT(t,X,X2,lp1,tnn(lpn1-1),x1) ! interpolate
     call SPLINT(t,Y,Y2,lp1,tnn(lpn1-1),y1) ! interpolate
     call sizebgele(x1,y1,pos,space)
@@ -722,10 +993,11 @@ do i=1,lp0 ! polygon loop start!
       call SPLINT(t,X,X2,lp1,tnn(j),xpoly2(lp0n,j)) ! interpolate
       call SPLINT(t,Y,Y2,lp1,tnn(j),ypoly2(lp0n,j))
     end do
-    if ( i .le. nclose ) then !! ASSIGN ind if ( i .le. nclose)
+    if ( i .le. nclose ) then !! ASSIGN ind if ( i .le. nclose), here is skipped when nclose = 0
       ! between starting and end nodes, we cannot define ind.
       ind2(lp0n,1,:)=ind(iind-lpoly(i)+1,:) ! starting node of lp0n-th polygon
       ind2(lp0n,2,:)=ind(iind,:) ! and end node of unclosed polygons, we can still assign ind()
+      loc(lp0n,1:2) = loc(i,1:2) ! 2019.02.25
       write(*,*) "lp0n=",lp0n
       !   write(*,*) "ind2(lp0n,1,1-2)=",ind2(lp0n,1,1),ind2(lp0n,1,2)
       !   write(*,*) "ind2(lp0n,1,1-2)=",ind2(lp0n,2,1),ind2(lp0n,2,2)
@@ -737,43 +1009,53 @@ end do  ! i loop end
 
 !#[3]## set output h_poly and h_coast
 !#[3-1]## h_poly
-call allocatepoly(h_poly,lp0n+1,g_poly%ncmax,nclose2) ! +1 is for when nclose = 0
-write(*,*) "check3 lp0n=",lp0n
-h_poly%lpoly0              = lp0n
-h_poly%xypoly(2,1:lp0n,:)  = xpoly2(1:lp0n,1:g_poly%ncmax)
-h_poly%xypoly(1,1:lp0n,:)  = ypoly2(1:lp0n,1:g_poly%ncmax)
-h_poly%lpoly(1:lp0n)       = lpoly2(1:lp0n)
-h_poly%nclose              = nclose2
-h_poly%ind2(1:nclose2,:,:) = ind2(1:nclose2,:,:) ! nclose2 < nclose
-lpoly0pre                  = lpoly0
+ call allocatepoly(h_poly,lp0n+1,g_poly%ncmax,nclose2) ! +1 is for when nclose = 0
+ write(*,*) "check3 lp0n=",lp0n
+ h_poly%lpoly0              = lp0n
+ h_poly%xypoly(2,1:lp0n,:)  = xpoly2(1:lp0n,1:g_poly%ncmax)
+ h_poly%xypoly(1,1:lp0n,:)  = ypoly2(1:lp0n,1:g_poly%ncmax)
+ h_poly%lpoly(1:lp0n)       = lpoly2(1:lp0n)
+ h_poly%nclose              = nclose2
+ h_poly%iflag_topright_land = iflag_topright_land  ! 2019.03.07
+ if ( nclose2 .ge. 1 ) then ! 2019.03.06
+  h_poly%loc(1:nclose2,1:2)  = loc(1:nclose2,1:2)  ! 2019.02.25
+  h_poly%ind2(1:nclose2,:,:) = ind2(1:nclose2,:,:) ! nclose2 < nclose
+ end if                     ! 2019.03.06
+ lpoly0pre                  = lpoly0
 
 !#[3-2]## h_coast
-ncoast=0
-do i=1,lp0n
- ncoast = ncoast + h_poly%lpoly(i)
-end do
-call allocatecoast(h_coast,ncoast)
-h_coast%ncoast = ncoast
-write(*,*) "# of points on coast is", h_coast%ncoast
-ii=0
-do i=1,lp0n
- do j=1,h_poly%lpoly(i)
+ ncoast=0
+ do i=1,lp0n
+  ncoast = ncoast + h_poly%lpoly(i)
+ end do
+ call allocatecoast(h_coast,ncoast)
+ h_coast%ncoast = ncoast
+ write(*,'(a,i8)') " # of points on coast is", h_coast%ncoast
+ ii=0
+ do i=1,lp0n
+  do j=1,h_poly%lpoly(i)
    ii=ii+1
    h_coast%cxy(1:2,ii)=h_poly%xypoly(1:2,i,j)
+  end do
  end do
-end do
 
-write(*,*) "new lpoly0 is reduced to",lp0n, "from",lpoly0pre
-write(*,*) "nclose",nclose,"is reduced to nclose2",nclose2
+ write(*,*) "new lpoly0 is reduced to",lp0n, "from",lpoly0pre
+ write(*,*) "nclose",nclose,"is reduced to nclose2",nclose2
 
-write(*,*) "### smoothen10_5 end!###"
-return
+ if ( iflag_topright_land .and. nclose2 .eq. 0 ) then ! 2019.02.28
+  write(*,*) "GEGEGE! There are no oceans!"
+  write(*,'(a,l3)') " iflag_topright_land",iflag_topright_land
+  stop
+ end if
+ write(*,*) "### smoothen10_5 end!###"
+
+ return
 end subroutine smoothen10_5
 !########################################################### outpolygeo13
+!# modified to include iflag_topright_land 2019.02.21
 !# g_meshpara is included as input on 2017.06.28
 subroutine outpolygeo13(i_poly,geofile,geofileki,g_bound,zlfile,&
 &                       iflg,ilflg,xcorner,ycorner,h_poly,g_meshpara)
-!####           output polygon2.geo               ####
 use coastline_data
 use param_mesh ! see m_param_mesh.f90, added on 2017.06.28
 implicit none
@@ -781,33 +1063,38 @@ type(poly_data),       intent(in)     :: i_poly ! after nclose polygons are comb
 type(poly_data),       intent(in)     :: h_poly ! before nclose polygons are combined
 type(bound_data),      intent(in)     :: g_bound
 type(meshpara),        intent(in)     :: g_meshpara ! see m_param_mesh.f90, 2017.06.28
+real(8),               intent(in)     :: xcorner(0:3),ycorner(0:3)  ! 2019.02.20 0 for right top
+integer(4),            intent(in)     :: iflg(0:3),ilflg(0:3)
+integer(4)                            :: ncorner(0:3)               ! 2019.02.21
 integer(4)                            :: nclose, ncmax
 integer(4),allocatable,dimension(:)   :: lpoly_origin
 integer(4),allocatable,dimension(:)   :: zlabel,ibelong
 integer(4)                            :: lpoly0,i,j,jj,k,is
 integer(4),allocatable,dimension(:)   :: lpoly
-real(8),               dimension(3)   :: xcorner,ycorner
-integer(4),            dimension(3)   :: iflg,ilflg,ncorner
 integer(4),allocatable,dimension(:)   :: istart,iend
 !! istart(i) and iend(i) are starting and ending node # of i-th polygon, respectively.
 real(8),   allocatable,dimension(:,:) :: xpoly,ypoly
 ! nline is the number of lines on calculation boundaries necesary
-! for closing land polygons, nline4(i,1:4) store lines of i-th polygon
+! for closing land polygons, nline4(i,1:5) store lines of i-th polygon
 ! 1st to 4th boundaries are left, bottom, right, and top calculation boundaries, respectively.
 integer(4),allocatable,dimension(:)   :: nline
-integer(4),allocatable,dimension(:,:) :: nline4
+integer(4),allocatable,dimension(:,:) :: nline4 ! lines to close polygons
 character(70)                         :: geofile,zlfile,geofileki
 real(8)                               :: sizebo
+logical                               :: iflag_topright_land ! 2019.02.21
+integer(4)                            :: istart_polygon  ! 2019.02.21
+real(8),allocatable,dimension(:,:)    :: loc             ! 2019.02.21
 
 !#[0]## set input
  ncmax        = g_bound%ncmax                   ! 2018.08.28
  lpoly0       = i_poly%lpoly0
  nclose       = h_poly%nclose
+ write(*,*) "nclose",nclose,"outpolygeo13 start!"
  allocate(      lpoly_origin(nclose)         )  ! 2018.08.28
  allocate(      zlabel(ncmax), ibelong(ncmax))  ! 2018.08.28
  allocate(      xpoly(lpoly0,ncmax)          )  ! 2018.08.28
  allocate(      ypoly(lpoly0,ncmax)          )  ! 2018.08.28
- allocate(      nline(nclose), nline4(nclose,4))! 2018.08.28
+ allocate(      nline(nclose), nline4(nclose,5))! 2018.02.21
  lpoly        = i_poly%lpoly                    ! 2018.08.28
  lpoly_origin = h_poly%lpoly                    ! 2018.08.28
  xpoly        = i_poly%xypoly(1,:,:)   ! east
@@ -816,112 +1103,150 @@ real(8)                               :: sizebo
  zlabel       = g_bound%zlabel
  ibelong      = g_bound%ibelong
  allocate(      istart(nclose),iend(nclose)) ! 2018.08.28
+ iflag_topright_land = i_poly%iflag_topright_land    ! 2019.02.21
+ allocate( loc(nclose,2) )    ! 2019.02.21
+ loc          = h_poly%loc    ! 2019.02.21
 
 !#[1]### open files
-open(1,file=geofile)
-open(3,file=geofileki)
-open(2,file=zlfile)
-open(4,file="mshki2ocean.ctl")
-jj=0
-write(1,*) "lc=",sizebo,";" ! lc is the characteristic length for element size
-write(3,*) "lc=",sizebo,";" ! lc is the characteristic length for element size
+ open(1,file=geofile)
+ open(3,file=geofileki)
+ open(2,file=zlfile)
+ open(4,file="mshki2ocean.ctl")
+ jj=0
+ write(1,*) "lc=",sizebo,";" ! lc is the characteristic length for element size
+ write(3,*) "lc=",sizebo,";"
 
-!# [1] ### generate points
-do i=1,lpoly0
- do j=1,lpoly(i)
-  jj=jj+1
-  write(1,*)"Point(",jj,")={",xpoly(i,j),",",ypoly(i,j),",0.0,lc} ;"
-  write(3,*)"Point(",jj,")={",xpoly(i,j),",",ypoly(i,j),",0.0,lc} ;"
-  write(2,*) zlabel(jj), ibelong(jj)
- end do
-end do
-close(2)
-write(4,'(a20,i8)') "#### nodeseageo ####",jj
-!# add node necessary for land polygon
-do i=1,3
- if ( ilflg(i) .ne. 0 ) then
-  jj=jj+1 !　ilflg(i) is polygon # in nclose unclosed polygons which i-th corner nodes is included
-  write(3,*)"Point(",jj,")={",ycorner(i),",",xcorner(i),",0.0,lc} ;"
-  ncorner(i)=jj ! jj is the node # which i-th corner corresponds to
- end if
-end do
-write(4,'(a20,i8)') "#### nodeseageo ####",jj
-
-!# [2] ### generate lines
-jj=0;is=0
-do i=1,lpoly0
-is=is+lpoly(i)
-do j=1,lpoly(i)-1 ! lpoly(i) does not include starting node
-jj=jj+1
-write(1,*) "Line(",jj,")={",jj,",",jj+1,"} ;"
-write(3,*) "Line(",jj,")={",jj,",",jj+1,"} ;"
-end do
-jj=jj+1
-write(1,*) "Line(",jj,")={",jj,",",is-lpoly(i)+1,"} ;"
-write(3,*) "Line(",jj,")={",jj,",",is-lpoly(i)+1,"} ;"
-end do
-
-!# add lines necessary for land polygons
-istart(:)=0;iend(:)=0
-nline(:)=0
-is=1 ! the north east corner node must be added in subroutine addcorner11
-do i=1,nclose
- do j=1,3
-  if ( iflg(j) .eq. i-1 ) is=is+1 ! node oreder is already arranged by including corner nodes for first polygon
- end do
- is=is+lpoly_origin(i)
- iend(i)=is
- istart(i)=is-lpoly_origin(i)+1 !iend(i) and istart is end and start node number in nclose unclosed polygons
- !write(*,*) "i=",i,"lpoly_origin(i)=",lpoly_origin(i),"istart=",istart(i),"iend(i)=",iend(i)
- jj=jj+1
- nline(i)=1
- nline4(i,nline(i))=jj
- write(3,*) "Line(",jj,")={",iend(i),","
- do j=1,3
-  if ( ilflg(j) .eq. i)then
-   write(3,*) ncorner(j),"} ;"
+!# [2] ### generate points
+ do i=1,lpoly0
+  do j=1,lpoly(i)
    jj=jj+1
-   nline(i)=nline(i)+1
-   nline4(i,nline(i))=jj
-   write(3,*)"Line(",jj,")={",ncorner(j),","
+   write(1,*)"Point(",jj,")={",xpoly(i,j),",",ypoly(i,j),",0.0,lc} ;"
+   write(3,*)"Point(",jj,")={",xpoly(i,j),",",ypoly(i,j),",0.0,lc} ;"
+   write(2,*) zlabel(jj), ibelong(jj)
+  end do
+ end do
+ close(2)
+ write(4,'(a20,i8)') "#### nodeseageo ####",jj
+ !# add corner nodes necessary for land polygon 2019.02.21
+ do i=0,3 ! 2019.02.21
+  if ( ilflg(i) .ne. 0 ) then ! ilflg(i)=0 : i-th corner is in ocean
+   jj=jj+1 ! ilflg(i) = k : k th polygon includes i-th corner node (k=0: ocean)
+   write(3,*)"Point(",jj,")={",ycorner(i),",",xcorner(i),",0.0,lc} ;"
+   ncorner(i)=jj ! jj is the node # which i-th corner corresponds to
   end if
  end do
- write(3,*) istart(i),"};"
-end do
+ write(4,'(a20,i8)') "#### nodegeo    ####",jj ! 2019.02.28
+
+!# [3] ### generate lines
+ jj=0;is=0
+ do i=1,lpoly0
+  is=is+lpoly(i)
+  do j=1,lpoly(i)-1
+   jj=jj+1
+   write(1,*) "Line(",jj,")={",jj,",",jj+1,"} ;"
+   write(3,*) "Line(",jj,")={",jj,",",jj+1,"} ;"
+  end do
+  jj=jj+1
+  write(1,*) "Line(",jj,")={",jj,",",is-lpoly(i)+1,"} ;" ! close the polygon
+  write(3,*) "Line(",jj,")={",jj,",",is-lpoly(i)+1,"} ;"
+ end do
+
+!# [4] ### add lines necessary for land polygons
+ istart(1:nclose) = 0
+ iend(  1:nclose) = 0
+ nline(:)         = 0
+ if ( iflag_topright_land ) then ! 2019.02.21
+  iend(1)   = lpoly_origin(1)
+  istart(1) = 1
+  nline(1)  = nline(1) + 1   ! increas boundary line for ith polygon
+  jj = jj + 1
+  nline4(1,nline(1))=jj     ! nline4(i,1:nline(i)) stores
+  write(3,*) "Line(",jj,")={",iend(1),","
+  do j=3,0,-1
+   if ( j .lt. loc(1,2) ) then
+    write(3,*) ncorner(j),"} ;"
+    nline(1) = nline(1) + 1   ! increas boundary line for ith polygon
+    jj = jj + 1
+    nline4(1,nline(1))=jj ! added line id = jj
+    write(3,*)"Line(",jj,")={",ncorner(j),","
+   end if
+  end do
+  do j=3,1,-1
+   if ( loc(1,1) .lt. j) then
+    write(3,*) ncorner(j),"} ;"
+    nline(1) = nline(1) + 1   ! increase boundary line for ith polygon
+    jj = jj + 1
+    nline4(1,nline(1))=jj ! added line id = jj
+    write(3,*)"Line(",jj,")={",ncorner(j),","
+   end if
+  end do
+  write(3,*) istart(1),"};"
+  istart_polygon = 2
+  is = lpoly_origin(1)
+ else
+  istart_polygon = 1 ! 2019.02.21
+  is=1 ! the north east corner node must be added in subroutine addcorner11
+ end if
+
+ !# normal land polygons
+ do i=istart_polygon,nclose ! 2019.02.21
+  do j=1,3 !
+   if ( iflg(j) .eq. i-1 ) is = is + 1 ! node order is already arranged including corner nodes for first polygon
+  end do
+  is        = is + lpoly_origin(i)
+  iend(i)   = is
+  istart(i) = is - lpoly_origin(i) + 1 !iend(i) and istart is end and start node id in nclose unclosed polygons
+  jj=jj+1
+  nline(i)=1
+  nline4(i,nline(i))=jj
+  write(3,*) "Line(",jj,")={",iend(i),","
+  do j=3,1,-1 ! 2019.02.25
+   if ( ilflg(j) .eq. i )then ! when j-th corner is included by i-th polygon
+    write(3,*) ncorner(j),"} ;"
+    jj=jj+1               ! line index
+    nline(i)=nline(i)+1   ! increas boundary line for ith polygon
+    nline4(i,nline(i))=jj ! added line id = jj
+    write(3,*)"Line(",jj,")={",ncorner(j),","
+   end if
+  end do
+  write(3,*) istart(i),"};"
+ end do
 
 !# [3] ### generate Line loop
-is=0;k=0
-do i=1,lpoly0 ! line loop mainly for ocean surface
-is=is+lpoly(i);k=is-lpoly(i)
-write(1,*) "Line Loop(",i,")={",(k+j,",",j=1,lpoly(i)-1),k+lpoly(i),"} ;"
-write(3,*) "Line Loop(",i,")={",(k+j,",",j=1,lpoly(i)-1),k+lpoly(i),"} ;"
-end do
-!# line loop for land polygon
-jj=lpoly0
-!write(*,*) "lpoly0=",lpoly0
-!write(*,*) "nclose=",nclose
-do i=1,nclose
-jj=jj+1
-write(3,*) "Line Loop(",jj,")={",(j,",",j=istart(i),iend(i)-2),iend(i)-1 ! iend - istart lines indicate i-th unclosed polygons
-write(3,*) (",",nline4(i,j),j=1,nline(i)),"} ;" ! i-th unclosed polygon is closed
-end do
-!# [4] ### generate Surface for delauney meshing
-write(1,*) "Plane Surface(1)={",(i,",",i=1,lpoly0-1),lpoly0,"} ;"
-write(3,*) "Plane Surface(1)={",(i,",",i=1,lpoly0-1),lpoly0,"} ;"
-do i=2,lpoly0
-write(3,*) "Plane Surface(",i,")={",i,"} ;" ! island polygons
-end do
-do i=lpoly0+1,lpoly0+nclose
-write(3,*) "Plane Surface(",i,")={",i,"} ;" ! continent, land touching boundaries, polygons
-end do
-!# [5] ### difine physical entity
-!write(3,*) "oceansurface = 10"
-!write(3,*) "Physical Surface(oceansurface)={1};"
-!write(3,*) "landsurface = 20"
-!write(3,*) "Physical Surface(landsurface)={2",(",",i,i=3,lpoly0+nclose), "};"
+ is=0;k=0
+ do i=1,lpoly0 ! line loop mainly for ocean surface
+  is=is+lpoly(i);k=is-lpoly(i)
+  write(1,*) "Line Loop(",i,")={",(k+j,",",j=1,lpoly(i)-1),k+lpoly(i),"} ;"
+  write(3,*) "Line Loop(",i,")={",(k+j,",",j=1,lpoly(i)-1),k+lpoly(i),"} ;"
+ end do
+ !# line loop for land polygon
+ jj=lpoly0
+ do i=1,nclose ! nclose = # of land polygons (from h_poly)
+  jj=jj+1
+  write(3,*) "Line Loop(",jj,")={",(j,",",j=istart(i),iend(i)-2),iend(i)-1 ! unclosed part
+  write(3,*) (",",nline4(i,j),j=1,nline(i)),"} ;" ! lines to close polygon
+ end do
+ 
+ !# [4] ### generate Surface for delauney meshing
+ write(1,*) "Plane Surface(1)={",(i,",",i=1,lpoly0-1),lpoly0,"} ;"
+ write(3,*) "Plane Surface(1)={",(i,",",i=1,lpoly0-1),lpoly0,"} ;"
+ do i=2,lpoly0
+  write(3,*) "Plane Surface(",i,")={",i,"} ;" ! island polygons
+ end do
+ do i=lpoly0+1,lpoly0+nclose
+  write(3,*) "Plane Surface(",i,")={",i,"} ;" ! continent, land touching boundaries, polygons
+ end do
+
+ !# [5] ### difine physical entity
+ !write(3,*) "oceansurface = 10"
+ !write(3,*) "Physical Surface(oceansurface)={1};"
+ !write(3,*) "landsurface = 20"
+ !write(3,*) "Physical Surface(landsurface)={2",(",",i,i=3,lpoly0+nclose), "};"
+
 close(1)
 close(3)
 close(4)
+
 write(*,*) "### outpolygeo13 end! ###"
 return
 end subroutine outpolygeo13
@@ -1039,8 +1364,11 @@ end
 subroutine loopelement(iii,l,node,neast,ncmax,ncoast,h,label,ind0,&
 &                      cx,cy,lpoly,xpoly,ypoly,ind,lpmax)
 implicit none
-integer(4)                                      :: i,ii,iii,l,j,k,node,ncmax,ncoast,neast
+integer(4),                       intent(in)    :: ncmax,node,ncoast,neast      !      2019.02.19
+integer(4)                   ,    intent(in)    :: iii ! starting node id in topo grid 2019.02.19
+integer(4)                   ,    intent(inout) :: l   ! current polygon #             2019.02.19
 integer(4)                                      :: nuwd,nuwd2,npoly,iclose,lpmax
+integer(4)                                      :: i,ii,j,k
 integer(4),dimension(ncmax,2),    intent(in)    :: ind0
 integer(4),dimension(ncmax,2),    intent(inout) :: label,ind
 integer(4),dimension(lpmax),      intent(inout) :: lpoly
@@ -1050,7 +1378,7 @@ real(8),   dimension(node)                      :: h
 real(8),   dimension(ncmax)                     :: cx,cy
 
  i=iii  ! i is the starting node
- l=l+1 ! increase polygon number
+ l=l+1  ! increase polygon number
  j=1
 ! i-th node on coast nods
  label(i,1)=l ! set polygon number
@@ -1059,7 +1387,7 @@ real(8),   dimension(ncmax)                     :: cx,cy
 !write(*,*) "polygon #=",l,"start!!"
 ! set first nuwd
  nuwd=0
- if (ind0(i,2) .eq. 1) then
+ if (ind0(i,2) .eq. 1) then ! gebco node is left side of i-th coastline node
     nuwd=1 ! from top
     if ( ind0(i,1) .gt. node - neast ) nuwd = 3 ! from bottom
  end if
@@ -1141,7 +1469,6 @@ integer(4),dimension(3)       :: id3,iflag
 integer(4),dimension(3,4)     :: nuwd34
 data nuwd34(1,1:4) /4,3,4,3/
 data nuwd34(2,1:4) /2,1,2,1/
-
 data nuwd34(3,1:4) /1,2,3,4/
 ! look for on-coastline nodes on the other three edges
 ! determine three (ind(1), ind(2)) pairs
@@ -1216,7 +1543,8 @@ if ( ij .eq. 2 ) then
 stop
 end if
 if ( ij .eq. 3 ) then
- if ( h(ind0(i,1)) > 0 ) then
+! if ( h(ind0(i,1)) > 0 ) then ! commented out 2019.03.31 "keep nallow water roads"
+ if ( h(ind0(i,1)) < 0 ) then ! 2019.03.31 avoid nallow water roads
  ii=id3(1)
  nuwd2=nuwd34(1,nuwd)
  else

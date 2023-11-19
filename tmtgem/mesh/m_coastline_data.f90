@@ -8,6 +8,7 @@ type grid_data
  real(8),dimension(:,:),allocatable :: lonlatalt ! lon [deg], lat [deg], altitude [m]
  ! eastward[km], northward[km], upward[km]
   real(8),dimension(:,:),allocatable :: xyz
+  logical :: iflag_topright_land     ! 2019.02.25
 end type grid_data
 
 ! label    : polygon number, default = 0, meaning not belonging to any polygon
@@ -44,7 +45,9 @@ integer(4),allocatable,dimension(:,:,:) :: ind2 ! ind2(nclose,2,2)
 ! assumed on the calculation boundary
 integer(4),allocatable,dimension(:)     :: lpoly  ! # of points in each polygon
 real(8),   allocatable,dimension(:,:,:) :: xypoly
-! xypoly(1:2,1:ncmax,1:lpoly0) x,y component of
+! xypoly(1:2,1:lpoly0,1:ncmax) x,y component of
+logical   :: iflag_topright_land       ! 2019.02.21
+real(8),allocatable,dimension(:,:)      :: loc ! 2019.02.21 see addcorner.f90
 end type
 
 type bound_data
@@ -78,6 +81,7 @@ g_poly%lpoly0=0
 allocate(g_poly%lpoly(lpmax))
 allocate(g_poly%xypoly(2,lpmax,ncmax))
 allocate(g_poly%ind2(nclose,2,2))
+allocate(g_poly%loc(nclose,2)) ! 2019.02.25
 
 return
 end

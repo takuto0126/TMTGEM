@@ -72,14 +72,14 @@ real(8) :: x01,x02,y01,y02
 !#[1]## set input
 lonorigin = g_meshpara%lonorigin
 latorigin = g_meshpara%latorigin
-elon = g_meshpara%elon
-nlat = g_meshpara%nlat
-lenout = g_meshpara%lenout
+elon      = g_meshpara%elon
+nlat      = g_meshpara%nlat
+lenout    = g_meshpara%lenout
 
-y2=earthrad*d2r*(nlat-latorigin)
-y1=-y2
-x2=earthrad*dcos(latorigin*d2r)*d2r*(elon-lonorigin)
-x1=-x2
+y2 = earthrad*d2r*(nlat-latorigin)
+y1 = -y2
+x2 = earthrad*dcos(latorigin*d2r)*d2r*(elon-lonorigin)
+x1 = -x2
 
 x01=x1-lenout
 x02=x2+lenout

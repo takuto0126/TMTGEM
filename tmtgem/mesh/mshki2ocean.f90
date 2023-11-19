@@ -49,18 +49,22 @@ integer(4),intent(out) :: ki2oceanptr(ntrik),ocean2kiptr(nodes)
 integer(4) :: i,j
 ki2oceanptr(:)=99999999
 j=0
+
 do i=1,nodeseageo
-j=j+1
-ki2oceanptr(i)=j;ocean2kiptr(j)=i
+ j=j+1
+ ki2oceanptr(i)=j;ocean2kiptr(j)=i
 end do
+
 do i=nodegeo+1,maxseabry
-j=j+1
-ki2oceanptr(i)=j;ocean2kiptr(j)=i
+ j=j+1
+ ki2oceanptr(i)=j;ocean2kiptr(j)=i
 end do
+
 do i=maxlandbry+1,maxinsea
-j=j+1
-ki2oceanptr(i)=j;ocean2kiptr(j)=i
+ j=j+1
+ ki2oceanptr(i)=j;ocean2kiptr(j)=i
 end do
+
 if ( j .ne. nodes) goto 10
 write(*,*) "### MAKENODEPTR4 END!! ###"
 return

@@ -33,11 +33,12 @@ integer(4),allocatable,dimension(:,:) :: ki23dptr ! ki23dptr(i,j) is i=1, surfac
 integer(4)      :: n3d, n3dn ! n3d: total number of 3d geo file, n3dn= n3d + 8 (= 3d corner)
 integer(4)      :: nlinbry(4),linbry_sb(2,4,100) ! nlinbry(i) is # of lines on i-th calculation boundary, linbry(i,j) is line number of j-th line of i-th boundary
 integer(4)      :: m4(4,2)
-character(70)   :: oceanfile="ocean.msh",head,kifile ! input files
-character(70)   :: premsh="pre3d.msh" ! subroutine premsh6_5
-character(70)   :: pregeo="pre3d.geo" ! subroutine outpregeo8
+character(70)   :: oceanfile ="ocean.msh",head,kifile ! input files
+character(70)   :: premsh    ="pre3d.msh"      ! subroutine premsh6_5
+character(70)   :: pregeo    ="pre3d.geo"      ! subroutine outpregeo8
 character(70)   :: bgmeshfile="bgmesh3d.pos"
-character(70)   :: ctlfile="mshki2ocean.ctl",ki23dfile="ki23dptr.dat"
+character(70)   :: ctlfile   ="mshki2ocean.ctl"
+character(70)   :: ki23dfile ="ki23dptr.dat"
 !#
 character(70)   :: geofile,geofileki,gebcofile ! 2018.08.27
 integer(4)      :: node0                       ! 2018.08.27
@@ -45,9 +46,9 @@ type(grid_data) :: gebco_grd                   ! 2018.08.27 see m_coastline_data
 
 !#[0]## read meshparameters for head
  CALL READMESHPARA(g_meshpara)
- CALL calcartesianbound(g_meshpara)
-     head=g_meshpara%head
-     kifile=head(1:len_trim(head))//"ki.msh"
+ CALL CALCARTESIANBOUND(g_meshpara)
+     head   = g_meshpara%head
+     kifile = trim(head)//"ki.msh"             ! 2019.02.28
  CALL READGEORELATION(g_relate,ctlfile) ! read nodeseageo, nodegeo, naddcorner
 
 !#[1]## read mesh
@@ -57,11 +58,11 @@ type(grid_data) :: gebco_grd                   ! 2018.08.27 see m_coastline_data
   nodek = ki_mesh%node
   ntrik = ki_mesh%ntri
 
-!#[2]## read topography and reflect topography in ki_mesh
- CALL calzkiland(g_meshpara,g_relate,ki_mesh)  ! 2018.08.27
+!#[2]## make n3d  ! 2021.05.31
+ call findnodenum3(ki_mesh,ocean_mesh,g_relate,n3d) ! 2021.05.31
 
-!#[3]## make n3d
- call findnodenum3(ki_mesh,ocean_mesh,g_relate,n3d)
+!#[3]## read topography and reflect topography in ki_mesh   ! 2021.05.31
+ CALL calzkiland(g_meshpara,g_relate,ki_mesh)  ! 2019.03.08 ! 2021.05.31
 
 !#[4]## make nzs
      allocate (nzs(n2ds))
@@ -79,9 +80,9 @@ type(grid_data) :: gebco_grd                   ! 2018.08.27 see m_coastline_data
 
 !#[7]## find horizontal boundary lines
  call MKLINE_V2(l_line, n3d, ntriall,3,n3all(1:ntriall,1:3)) ! make l_line%line(nline,2) see m_line_type.f90
- call MKN3  (l_line, n3d, ntriall, n3all(1:ntriall,1:3)) ! make l_line%n3line(ntriall,3)
+ call MKN3  (l_line, n3d, ntriall, n3all(1:ntriall,1:3))     ! make l_line%n3line(ntriall,3)
      deallocate(n3all)
- call findbryline7(ki_mesh,nlinbry,linbry_sb,l_line,ki23dptr,xyz,n3d,m4)
+ call findbryline7(ki_mesh,nlinbry,linbry_sb,l_line,ki23dptr,xyz,n3d,m4,g_meshpara,g_relate) ! 2019.02.28
 
 !#[8]## make last node set
        n3dn=n3d+8
@@ -92,7 +93,7 @@ type(grid_data) :: gebco_grd                   ! 2018.08.27 see m_coastline_data
  ntri = l_line%ntri ! 2018.11.18
  call outpregeo8(l_line,n3top,n3bot,xyz3d,n3d,pregeo,nlinbry,&
  &               linbry_sb,ki_mesh,g_meshpara,m4,ntri) ! 2018.11.18
- call outbgmesh3d(bgmeshfile,g_meshpara) ! see outbgmesh3d.f90
+! call outbgmesh3d(bgmeshfile,g_meshpara) ! see outbgmesh3d.f90 commented out 2019.04.02
 
 end program mk3dgeo
 !########################################## calzkailand
@@ -106,7 +107,7 @@ use mesh_relation
 implicit none
 type(meshpara), intent(in)         :: g_meshpara
 type(mesh),     intent(inout)      :: ki_mesh
-type(relate),   intent(in)         :: g_relate
+type(relate),   intent(in)         :: g_relate     ! see m_mesh_relation.f90
 integer(4)                         :: ntopo
 real(8),allocatable,dimension(:)   :: lon,lat,zt,x1,y1
 real(8),allocatable,dimension(:,:) :: xyz
@@ -127,6 +128,11 @@ character(50)                      :: gebcofile
  maxlandbry = g_relate%maxlandbry
  maxinsea   = g_relate%maxinsea
  nodek      = ki_mesh%node
+! write(*,*) "maxseabry",maxseabry
+! write(*,*) "maxlandbray",maxlandbry
+! write(*,*) "maxinsea",maxinsea
+! write(*,*) "nodek",nodek
+ allocate(xyz(3,nodek)) ! 2021.05.31
  xyz        = ki_mesh%xyz
 
 !# [1] ### count lines of gebcofile
@@ -142,7 +148,7 @@ character(50)                      :: gebcofile
  allocate(lon(ntopo),lat(ntopo),zt(ntopo),x1(ntopo),y1(ntopo))
  rewind(1)
  do i=1,ntopo
-  read(1,*) lon(i),lat(i),zt(i)
+  read(1,*) lon(i),lat(i),zt(i) ! zt is assumed downward [m] 2019.03.08
  end do
  close(1)
 
@@ -157,21 +163,30 @@ character(50)                      :: gebcofile
  write(*,*) "nsouth=",nsouth,"neast=",neast,"ntopo=",ntopo
 
 !# [4] ### convert lon and lat to cartecian coordinates about gebco data
- y1(:) = earthrad*(lat(:)-latorigin)*d2r ! [km] vertical cooridinate
- x1(:) = earthrad*dcos(latorigin*d2r)*(lon(:)-lonorigin)*d2r ! [km] horizontal coordinate
- zt(:) = zt(:)/1000.d0 ! [m] -> [km]
+ do i=1,ntopo ! 2021.05.31
+  y1(i) = earthrad*(lat(i)-latorigin)*d2r ! [km] vertical cooridinate  ! 2021.05.31
+  x1(i) = earthrad*dcos(latorigin*d2r)*(lon(i)-lonorigin)*d2r ! [km] horizontal coordinate ! 2021.05.31
+  zt(i) = - zt(i)/1000.d0 ! [m] -> [km] ! upward positive [km]  ! 2021.05.31
+ end do       ! 2021.05.31
  deallocate(lon,lat)
+
+! write(*,*) "check1"
 
 !# [5] ## cal z from topo
  do i=nodeseageo+1,nodegeo ! land boundary geo nodes [LAND]
   call findcalz(ntopo,nsouth,neast,x1,y1,zt,xyz(1:2,i),xyz(3,i))
  end do
+! write(*,*) "check2"
  do i=maxseabry+1,maxlandbry ! land boudary nodes added by gmsh [LAND]
+!  write(*,*) "i=",i,"xyz(1:2,i)",xyz(1:2,i),maxseabry, maxlandbry
   call findcalz(ntopo,nsouth,neast,x1,y1,zt,xyz(1:2,i),xyz(3,i))
  end do
+! write(*,*) "check3"
  do i=maxinsea+1,nodek ! nodes in land added by gmsh [LAND]
   call findcalz(ntopo,nsouth,neast,x1,y1,zt,xyz(1:2,i),xyz(3,i))
  end do
+
+! write(*,*) "check4"
 
 !# [6] ## output
  ki_mesh%xyz = xyz
@@ -190,6 +205,8 @@ real(8),   intent(in)  :: x1(ntopo),y1(ntopo),zt(ntopo)
 real(8)                :: calz
 integer(4)             :: i, j, neast1, nsouth1, ii
 
+  nsouth1=0  ! 2021.05.31
+  neast1=0   ! 2021.05.31
   do i=1,nsouth-1
    if ( y1((i-1)*neast+1) .ge. xy(2) .and. xy(2) .ge. y1(i*neast+1) ) nsouth1=i
   end do
@@ -241,9 +258,9 @@ subroutine findnodenum3(ki_mesh,ocean_mesh,g_relate,n3d)
 use mesh_type
 use mesh_relation
 implicit none
-type(mesh),intent(in) :: ki_mesh,ocean_mesh
+type(mesh),  intent(in)    :: ki_mesh,ocean_mesh
 type(relate),intent(inout) :: g_relate
-integer(4),intent(out) :: n3d
+integer(4),  intent(out) :: n3d
 integer(4) :: nodegeo,nodeseageo,maxseabry,maxlandbry,maxinsea
 integer(4) :: i,nlineinsea,neleinsea
 integer(4) :: nodek,ntrik,n2ds,n3ds,nlink
@@ -498,60 +515,99 @@ close(1)
 write(*,*) "### PREMSH6_5 END!! ###"
 return
 end subroutine premsh6_5
-!########################################## findbryline7
-subroutine findbryline7(ki_mesh,nlinbry,linbry_sb,l_line,ki23dptr,xyz,n3d,m4)
-use mesh_type
-use line_type
-implicit none
-type(mesh),     intent(in)  :: ki_mesh
-type(line_info),intent(in)  :: l_line
-integer(4),     intent(in)  :: ki23dptr(2,ki_mesh%node),n3d
-real(8),        intent(in)  :: xyz(3,n3d)
-integer(4),     intent(out) :: nlinbry(4),linbry_sb(2,4,100),m4(4,2)
-integer(4)                  :: linbry(4,100)
-! n2k(j,1) is the belonging old line # for line j, n2k(j,2:3) are the start and end node #
-integer(4)                        :: nodek,nlink
-integer(4)                        :: n2k(ki_mesh%nlin,3)
-real(8),dimension(ki_mesh%node,2) :: xyk
-real(8),dimension(4) :: d=(/1.d0, -1.d0, -1.d0, -1.d0/)
-! nlinbry(i) is # of lines on i-th calculation boundary
-! linbry(i,j) is line number of j-th line of i-th boundary
-! 1 - 4 calculation boundaries are east, south, west, and north boundaries, respectively.
-integer(4) :: line,i,j,k,l,ii,jj,n1,n2,n3,is,isnext,ilast,idir
 
-!#[1]## set input
-nodek      = ki_mesh%node
-nlink      = ki_mesh%nlin
-n2k(:,1  ) = ki_mesh%n2flag(:,2)
-n2k(:,2:3) = ki_mesh%n2(:,1:2)
-xyk(:,1)=ki_mesh%xyz(1,:) ! x, y of polygonki.msh
-xyk(:,2)=ki_mesh%xyz(2,:)
+!########################################## findbryline7
+ subroutine findbryline7(ki_mesh,nlinbry,linbry_sb,l_line,ki23dptr,xyz,n3d,m4,g_meshpara,g_relate) ! 2019.02.28
+ use mesh_type
+ use line_type
+ use param_mesh    ! 2019.02.28
+ use mesh_relation ! 2019.02.28
+ implicit none
+ type(relate),   intent(in)  :: g_relate   ! 2019.02.28
+ type(meshpara), intent(in)  :: g_meshpara ! 2019.02.28
+ type(mesh),     intent(in)  :: ki_mesh
+ type(line_info),intent(in)  :: l_line
+ integer(4),     intent(in)  :: ki23dptr(2,ki_mesh%node),n3d
+ real(8),        intent(in)  :: xyz(3,n3d)
+ integer(4),     intent(out) :: nlinbry(4),linbry_sb(2,4,100),m4(4,2)
+ integer(4)                  :: linbry(4,100)
+ ! n2k(j,1) is the belonging old line # for line j, n2k(j,2:3) are the start and end node #
+ integer(4)                        :: nodek,nlink
+ integer(4)                        :: n2k(ki_mesh%nlin,3)
+ real(8),dimension(ki_mesh%node,2) :: xyk
+ real(8),dimension(4) :: d=(/1.d0, -1.d0, -1.d0, -1.d0/)
+ ! nlinbry(i) is # of lines on i-th calculation boundary
+ ! linbry(i,j) is line number of j-th line of i-th boundary
+ ! 1 - 4 calculation boundaries are east, south, west, and north boundaries, respectively.
+ integer(4) :: line,i,j,k,l,ii,jj,n1,n2,n3,is,isnext,ilast,idir,istart
+ real(8)    :: xbound(4),ybound(4) ! 2019.02.28
+ integer(4) :: nodegeo,nodeseageo  ! nodegeo - nodeseageo : # of land corner nodes
+ real(8)    :: xymax(2)=0.         ! 2019.02.28
+
+ !#[1]## set input
+  nodek      = ki_mesh%node
+  nlink      = ki_mesh%nlin        ! nlink : # of boundary lines along lines in polygonki.geo
+  n2k(:,1  ) = ki_mesh%n2flag(:,2) ! attributes to lines in polygonki.geo 2019.02.28
+  n2k(:,2:3) = ki_mesh%n2(:,1:2)   ! node id composing line
+  xyk(:,1)   = ki_mesh%xyz(1,:)    ! x, y of polygonki.msh
+  xyk(:,2)   = ki_mesh%xyz(2,:)
+  xbound     = g_meshpara%xbound   ! 2019.02.28
+  ybound     = g_meshpara%ybound   ! 2019.02.28
+  nodegeo    = g_relate%nodegeo    ! 2019.02.28
+  nodeseageo = g_relate%nodeseageo ! 2019.02.28
 
 !#[2]## make nlinbry and linebry
-nlinbry(:)=0
-ilast=0
-is=1 ! starting node number, which is north east corner node
-do i=1,4 ! 1: right; 2: bottom; 3: right; 4 : top boundary
- if ( i .eq. 1 .or. i .eq. 3 ) ii = 1 !   ( east, west)
- if ( i .eq. 2 .or. i .eq. 4 ) ii = 2 !   ( bottom, top)
- 10 continue
- do j=1,nlink ! line loop  ; nlink is # of boundary lines in polygonki.msh
-  n1=n2k(j,2);n2=n2k(j,3) ! set the start and end node of j-th line
-  if ( (n1 .eq. is .or. n2 .eq. is ) .and. abs(xyk(n1,ii)-xyk(n2,ii)) .lt. 1.d-4 .and. ilast .ne. j ) then
-  ! search line start from is
-  nlinbry(i)=nlinbry(i)+1
-  linbry(i,nlinbry(i))=j
-  isnext=n2
-  if ( is .eq. n2)      linbry(i,nlinbry(i))=-j
-  if ( is .eq. n2)      isnext=n1
-  is=isnext
-  ilast=j
-!write(*,*) "i=",i,"nlinbry(i)=",nlinbry(i)
-!if ( linbry(i,nlinbry(i)) .gt. 0) write(*,*) n1,"->",n2
-!if ( linbry(i,nlinbry(i)) .lt. 0) write(*,*) n2,"->",n1
-!write(*,*) "xyk(n1,ii),xyk(n2,ii), delt=",xyk(n1,ii),xyk(n2,ii),(xyk(n1,ii)-xyk(n2,ii)),1.d-5
-goto 10
-end if
+  do i=1,nodegeo
+   xymax(1)=max(xymax(1),xyk(i,1))
+   xymax(2)=max(xymax(2),xyk(i,2))
+  end do
+
+  nlinbry(:)=0
+  ilast=0
+  !# searching for starting node id 2019.02.28
+  if ( xyk(1,1) .eq. xymax(1) .and. xyk(1,2) .eq. xymax(2)) then
+    write(*,*) "North east corner is in the ocean is=",is
+    is     = 1 ! when north east corner is in the ocean  2019.02.28
+    istart = 1
+    goto 20
+  else
+    do i=nodeseageo+1,nodegeo ! land corner loop
+     write(*,*) "i",i,"xyk(i,1:2)",xyk(i,1:2)
+     if ( xyk(i,1) .eq. xymax(1) .and. xyk(i,2) .eq. xymax(2) ) then ! north east corner is in land
+	is     = i
+	istart = i
+	write(*,*) "North east corner is in land !! is=",is
+	goto 20
+     end if
+    end do
+  end if
+  write(*,*) "GEGEGE no north east corner nodes!!"
+  write(*,*) "xymax(1:2)",xymax(1:2)
+  stop
+  20 continue ! 2019.02.28
+
+  do i=1,4 ! 1: right; 2: bottom; 3: right; 4 : top boundary
+   if ( i .eq. 1 .or. i .eq. 3 ) ii = 1 !   ( east, west)
+   if ( i .eq. 2 .or. i .eq. 4 ) ii = 2 !   ( bottom, top)
+   10 continue
+   do j=1,nlink ! boundary line loop for polygonki.msh ; nlink is # of boundary lines in polygonki.msh
+    n1 = n2k(j,2)
+    n2 = n2k(j,3) ! set the start and end node of j-th line
+    if ( (n1 .eq. is .or. n2 .eq. is ) .and. abs(xyk(n1,ii)-xyk(n2,ii)) .lt. 1.d-4 .and. ilast .ne. j ) then
+     ! search line start from is
+     nlinbry(i)=nlinbry(i)+1
+     linbry(i,nlinbry(i))=j
+     isnext=n2
+     if ( is .eq. n2)      linbry(i,nlinbry(i))=-j
+     if ( is .eq. n2)      isnext=n1
+     is=isnext
+     ilast=j
+     !write(*,*) "i=",i,"nlinbry(i)=",nlinbry(i)
+     !if ( linbry(i,nlinbry(i)) .gt. 0) write(*,*) n1,"->",n2
+     !if ( linbry(i,nlinbry(i)) .lt. 0) write(*,*) n2,"->",n1
+     !write(*,*) "xyk(n1,ii),xyk(n2,ii), delt=",xyk(n1,ii),xyk(n2,ii),(xyk(n1,ii)-xyk(n2,ii)),1.d-5
+     goto 10
+    end if
 !if (n2k(j,1) .eq. 186)then
 !write(*,*) "n2k(j,2:3)",n2k(j,2),n2k(j,3)
 !write(*,*) "xyk(n1,ii),xyk(n2,ii), delt=",xyk(n1,ii),xyk(n2,ii),(xyk(n1,ii)-xyk(n2,ii))
@@ -593,31 +649,33 @@ end do
 
 !#[5]## write nodes
 if (.false.) then ! 2018.11.09
-open(1,file="pre3dbry.geo")
-write(1,*) "lc=500.0 ;"
+ open(1,file="pre3dbry.geo")
+ write(1,*) "lc=500.0 ;"
  do i=1,n3d
- write(1,*)"Point(",i,")={",xyz(1,i),",",xyz(2,i),",",xyz(3,i),",lc} ;"
-end do
+  write(1,*)"Point(",i,")={",xyz(1,i),",",xyz(2,i),",",xyz(3,i),",lc} ;"
+ end do
 !### write lines only on boundaries
-jj=0
-do i=1,4
- do j=1,nlinbry(i)
- jj=jj+1
- line=linbry_sb(1,i,j)
-!  n1=n2k(abs(line),2);n2=n2k(abs(line),3)
-!  write(*,*) "i=",i,"j=",j,"line=",line,"x1,y1=",(xyk(n1,k),k=1,2),"x2,y2=",(xyk(n2,k),k=1,2)
-if ( line  .gt. 0) then
- write(1,*) "Line(",line,")={",l_line%line(1,line),",",l_line%line(2,line),"} ;"
-else
- write(1,*) "Line(",-line,")={",l_line%line(1,-line),",",l_line%line(2,-line),"} ;"
-end if
-end do
-end do
-close(1)
+ jj=0
+ do i=1,4
+  do j=1,nlinbry(i)
+   jj=jj+1
+   line=linbry_sb(1,i,j)
+   !  n1=n2k(abs(line),2);n2=n2k(abs(line),3)
+   !  write(*,*) "i=",i,"j=",j,"line=",line,"x1,y1=",(xyk(n1,k),k=1,2),"x2,y2=",(xyk(n2,k),k=1,2)
+   if ( line  .gt. 0) then
+    write(1,*) "Line(",line,")={",l_line%line(1,line),",",l_line%line(2,line),"} ;"
+   else
+    write(1,*) "Line(",-line,")={",l_line%line(1,-line),",",l_line%line(2,-line),"} ;"
+   end if
+  end do
+ end do
+ close(1)
 end if ! 2018.11.09
-if ( is .ne. 1) goto 99
+
+if ( is .ne. istart ) goto 99 ! 2019.02.28
 write(*,*) "### FINDBRYLINE7 END!! ###"
 return
+
 99 write(*,*) "GEGEGE boundary round loop cannot be achieved."
 write(*,*) "The end of node is", isnext
 write(*,*) "x,y=",xyk(isnext,1),xyk(isnext,2)
@@ -710,6 +768,7 @@ real(8)                  ::  sizein,sizebo ! 2017.06.28
   open(1,file=pregeo)
 
 ! Point Output
+!  write(1,*) "Mesh.AngleToleranceFacetOverlap = 0.001;" ! 2019.02.28 commented out on 2021.05.29
   write(1,*) "lc1=",sizein,";" ! 2017.06.28
   write(1,*) "lc2=",sizebo,";" ! 2017.06.28
   do i=1,n3d+8 ! n3d coordinates inputdo i=1,nodes

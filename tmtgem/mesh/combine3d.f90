@@ -116,7 +116,7 @@ write(1,'(i10,a,4i10)') ishift+i,"  4   2   0   2", (n4s(i,l),l=2,5) ! 2 for oce
 end do
 ishift=npois+ntets
 do i=1,nteta
-if (n4a(i,1) .eq. 2 ) n4a(i,1) = 3 ! 1 for air, 3 for land < CHECK!!
+if (n4a(i,1) .ge. 2 ) n4a(i,1) = n4a(i,1) + 1 ! 1 for air, >= 3 for land  modified on 2021.07.26
 write(1,'(i10,a,5i10)') i+ishift,"  4   2   0",(n4a(i,l),l=1,5) ! n4a(1)=2 for air, 3 for land
 end do
 write(1,'(a12)') "$EndElements"

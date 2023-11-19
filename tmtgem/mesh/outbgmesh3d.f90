@@ -46,7 +46,7 @@ do i=1,nobs
  x0=g_meshpara%xyz(1,i) ! [km]
  y0=g_meshpara%xyz(2,i) ! [km]
  z0=g_meshpara%xyz(3,i) ! [km]
- write(*,*) "x0=",x0,"y0=",y0,"z0=",z0
+ write(*,'(3(a,g15.7))') "x0=",x0,"y0=",y0,"z0=",z0 ! 2019.02.28
  do j=-jj,jj
  !#[x]
   xx = x0 + dx(j)
@@ -60,16 +60,18 @@ do i=1,nobs
  end do
 !
 end do
-do i=1,nx
- write(*,*) "xgrd (",i,")=",xgrd(i)
-end do
-do i=1,ny
- write(*,*) "ygrd (",i,")=",ygrd(i)
-end do
-do i=1,nz
- write(*,*) "zgrd (",i,")=",zgrd(i)
-end do
 
+if (.false.) then ! 2019.02.28
+ do i=1,nx
+  write(*,*) "xgrd (",i,")=",xgrd(i)
+ end do
+ do i=1,ny
+  write(*,*) "ygrd (",i,")=",ygrd(i)
+ end do
+ do i=1,nz
+  write(*,*) "zgrd (",i,")=",zgrd(i)
+ end do
+end if
 
 open(ifile,file=posfile)
 write(ifile,*)'View "backgraound mesh"{'

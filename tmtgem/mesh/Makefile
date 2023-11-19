@@ -1,16 +1,15 @@
 # modified on Sep 12, 2016
 # added mkline
 
-#FC=gfortran
-FC=ifort
+FC=gfortran
+#FC=ifort
 VPATH = ../common
-FC=ifort
-OPT=-O -fpe0 -check bounds -traceback -g
+#OPT=-O -fpe0 -check bounds -traceback -g
 #OPT=-O3
 all: coastline mshki2ocean extrude mk3dgeo combine3d mkline msh2spherical
 
 ## coastline.exe
-objs= m_constants.o m_param_mesh.o m_horizontalresolution.o m_coastline_data.o bgele.o outbgmesh14_obs.o addcorner.o m_topo_tool.o coastline.o
+objs= m_constants.o m_param_mesh.o m_horizontalresolution.o m_coastline_data.o bgele.o outbgmesh14_obs.o addcorner.o m_topo_tool.o m_intersection.o outlandpolygon14.o coastline.o
 coastline : $(objs)
 	$(FC) $(OPT) $(objs) -o coastline.exe
 
@@ -20,7 +19,7 @@ mshki2ocean : $(objs0)
 	$(FC) $(OPT) $(objs0) -o mshki2ocean.exe
 
 ## extrude
-objs10= m_param_mesh.o m_outerinnerproduct.o m_fem_util.o sort_index.o m_mesh_type.o m_horizontalresolution.o extrude.o
+objs10= m_param_mesh.o m_outerinnerproduct.o m_fem_util.o sort_index.o m_mesh_type.o m_horizontalresolution.o m_topo_tool.o m_coastline_data.o extrude.o
 extrude : $(objs10)
 	$(FC) $(OPT) $(objs10) -o extrude.exe
 

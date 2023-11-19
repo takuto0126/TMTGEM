@@ -54,7 +54,7 @@ subroutine MKLINE(l_line, nodeg, ntetg, n4) ! line_stack,line_item, nline genera
 implicit none
 type(line_info),intent(out) :: l_line
 integer(4),     intent(in)  :: nodeg, ntetg, n4(ntetg,4)
-integer(4),     parameter   :: maxnline=3000000
+integer(4),     parameter   :: maxnline=50000000
 integer(4)                  :: line_item_work(maxnline),line_stack(0:nodeg)
 integer(4)                  :: i,j,k,l,n1,n2,nline,icount,n1o,n2o
 
@@ -110,6 +110,7 @@ write(*,*) "GEGEGE! # of line exceeds maxnline =", maxnline
 write(*,*) "ntetg=",ntetg,"i=",i
 stop
 99 write(*,*) "GEGEGE! icount=", icount,"is not equal to nline=",nline
+
 stop
 
 end subroutine MKLINE
@@ -121,7 +122,7 @@ implicit none
 type(line_info),       intent(out)    :: l_line
 integer(4),            intent(in)     :: nodeg, ne, enod
 integer(4),            intent(in)     :: n4(ne,enod)
-integer(4),            parameter      :: maxnline=3500000
+integer(4),            parameter      :: maxnline=5000000
 integer(4),            parameter      :: maxnele=100
 integer(4),allocatable,dimension(:)   :: line_item_work, line_stack
 integer(4),allocatable,dimension(:)   :: nele
@@ -212,6 +213,7 @@ if ( enod .eq. 3 ) write(*,*) "ntri=",ne,"i=",i
 stop
 998 continue
 write(*,*) "GEGEGE! # maxnele=",maxnele,"too small for node-element connectivity data"
+write(*,*) " check node id",n1,", which currently connect to more than 100 tetrahedrons"! 2021.08.04
 stop
 end subroutine MKLINE_V2
 
@@ -279,17 +281,19 @@ use fem_edge_util ! for lm (see m_fem_edge_util.f90)
 implicit none
 type(line_info),    intent(inout)   :: l_line
 integer(4),         intent(in)      :: ntri, n3(ntri, 3), nodeg
-integer(4)                          :: n3line(ntri,3), nline
+integer(4)                          ::  nline,node
 integer(4)                          :: i,j,k, icount, lineid,idirection, n11,n12
 integer(4),allocatable,dimension(:) :: line_stack,line_item
-integer(4)                          :: node ! 2018.11.18
+integer(4),allocatable,dimension(:,:) :: n3line ! 2019.02.25
 
 !#[0] copy
+  allocate( n3line(ntri,3) ) ! 2019.02.25
   node  = l_line%node
-  nline = l_line%nline ! 2018.11.18
+  nline = l_line%nline       ! 2018.11.18
+  write(*,*) "node",node,"nline",nline
   allocate(line_stack(0:node),line_item(1:nline)) ! 2018.11.18
-  line_stack(0:l_line%node)=l_line%line_stack(0:l_line%node)
-  line_item(1:nline)       =l_line%line_item(1:nline)
+  line_stack(0:l_line%node) = l_line%line_stack(0:l_line%node)
+  line_item(1:nline)        = l_line%line_item(1:nline)
 
 !#[1] cal n3line
 do i=1,ntri ! element loop
