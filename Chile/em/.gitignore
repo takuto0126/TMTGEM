@@ -1,0 +1,4 @@
+bxyz/*.dat
+exyz/*.dat
+vxyz/*.dat
+*.cpt *.pdf *.ps *.dat *.grd gmt.history
