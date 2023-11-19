@@ -34,6 +34,7 @@ type(meshpara)                         :: g_meshpara ! see m_param_mesh.f90
 type(ocean_data)                       :: h_ocean    ! see m_oceanFvxyz.f90
 type(comcot_data)                      :: h_comcot   ! see m_oceanFvxyz.f90
 type(mesh)                             :: em_mesh    ! see m_mesh_type.f90
+type(mesh)                             :: ki_mesh    ! 2021.07.27
 type(line_info)                        :: l_line     ! see m_line_type.f90
 type(global_matrix)                    :: A          ! see m_iccg_var_takuto.f90
 type(PARDISO_PARAM)                    :: B
@@ -41,53 +42,54 @@ type(obs_info)                         :: obs_xy, obs_yz, obs_sites
 type(error)                            :: e_divrot   ! see m_divroterr.f90 2017.10.26
 real(8),   allocatable, dimension(:)   :: fsn0,fsn1,fsn2,fse,b_vec
 real(8),   allocatable, dimension(:,:) :: exyz,bxyz
-real(8),   allocatable, dimension(:,:) :: bxyz_yz,bxyz_xy,exyz_xy, bxyz_sites
+real(8),   allocatable, dimension(:,:) :: bxyz_yz,bxyz_xy,exyz_xy
+real(8),   allocatable, dimension(:,:) :: bxyz_sites,exyz_sites ! 2021.07.26
+real(8),   allocatable, dimension(:,:) :: vfxyz_sites,exyz_total_sites ! 2021.07.26
 integer(4),allocatable, dimension(:)   :: igroup
 integer(4),allocatable, dimension(:,:) :: table_dof
 integer(4)          :: nline  ! for ocean.msh, nodes3 is added on Oct. 26, 2015
-integer(4)          :: dofn=1, it,itmax, ip=0,i,j,jj,ixyflag, iflag_velocity,ntet
-integer(4)          :: iflagspherical
+integer(4)          :: dofn=1, it,itmax, ip=0,i,j,jj, iflag_velocity,ntet
 integer(4)          :: iflag = 0 ! output coordinate file  2018.11.14
 character(70)       :: meshctlfile
 real(8)             :: dt,tstart
 integer(4)          :: icalerrflag  ! 2017.10.26
-real(8)             :: tinterval_xy ! 2018.11.14
 
 !#[0]## read parameters
   CALL READPARAM(g_param)            ! see m_param.f90
        tstart         = g_param%tstart
        dt             = g_param%dt
        itmax          = g_param%tmax/dt
-       ixyflag        = g_param%ixyflag
-	 meshctlfile    = g_param%meshctlfile
-	 iflag_velocity = g_param%iflag_velocity
-	 !# set spherical parameter, added on 2016.11.20
+	  meshctlfile    = g_param%meshctlfile
+	  iflag_velocity = g_param%iflag_velocity
        g_param%iflagspherical=1 ! 0 for normal, 1 for spherical, 2016.11.20
-       iflagspherical = g_param%iflagspherical
-	 icalerrflag    = g_param%icalerrflag  ! 1 for err, 2 for cal, 3 for both
-	 tinterval_xy   = g_param%tinterval_xy ! 2018.11.14
+	  icalerrflag    = g_param%icalerrflag  ! 1 for err, 2 for cal, 3 for both
 
 !#[0-1]##
-  CALL READMESHPARA(g_meshpara,meshctlfile)  ! see m_param_mesh.f90
+  CALL READMESHPARA(g_meshpara,meshctlfile)     ! see m_param_mesh.f90
        g_param%lonorigin = g_meshpara%lonorigin ! 2016.11.20
        g_param%latorigin = g_meshpara%latorigin ! 2016.11.20
-  CALL CALCARTESIANBOUND(g_meshpara)         ! see m_param_mesh.f90
-  CALL OBSLONLAT2XYZ(g_param,g_meshpara)     ! see below, g_param%obsxyz is calculated
+  CALL CALCARTESIANBOUND(g_meshpara)            ! see m_param_mesh.f90
+  CALL OBSLONLAT2XYZ(g_param,g_meshpara)        ! see below, g_param%obsxyz is calculated
 
-!#[1]## read global ocean/EM mesh informations
+!#[1]## read mesh   2021.07.27
+!#[1-1]# read global ocean/EM mesh informations
   CALL READMESH_TOTAL(em_mesh, g_param%em3dmsh) ! m_mesh_type.f90
   CALL GENXYZMINMAX(em_mesh,g_param)            ! cal g_param%xyzminmax
   CALL READLINE(g_param%linefile,l_line)        ! see m_line_type.f90
       ntet = em_mesh%ntet
       nline=l_line%nline ; write(*,*) "nline=",nline
-      allocate (igroup(em_mesh%ntet))
-      igroup(:)=em_mesh%n4flag(:,2) ! 1 for air, 2 for ocean, 3 for below seafloor
+      allocate (igroup(ntet))
+      igroup(1:ntet)=em_mesh%n4flag(1:ntet,2) ! 1 for air, 2 for ocean, 3 for below seafloor
 
-!#[Ocean conductivity option]##              ! 2018.11.13
-   call setoceancond(em_mesh,g_param)  ! m_caloceancond.f90 2018.11.13
+!#[1-2]# read ki_mesh and ki23dptr              ! 2021.07.27
+  CALL READMESH_TOTAL(ki_mesh, g_param%pokimsh) ! 2021.07.27 read polygon_ki.msh
+  CALL READKI23DPTR(g_param,ki_mesh)            ! 2021.07.27 read ki23dptr.dat, generate g_param%ki23dptr
+
+!#[Ocean conductivity option]##                 ! 2018.11.13
+  CALL GENOCEANPTR(h_ocean,em_mesh,g_param)     ! see m_oceanFvxyz.f90 2017.11.02
+  CALL setoceancond(em_mesh,g_param,h_ocean)    ! m_caloceancond.f90 2018.11.13
 
 !#[2]## allocate h_ocean, calculate nodes, em2oceanptr, ocean2emptr
-  CALL GENOCEANPTR(h_ocean,em_mesh,g_param) ! see m_oceanFvxyz.f90 2017.11.02
   it = 0
   call prepareFxyz(h_ocean,em_mesh,g_param,g_meshpara)                ! h_ocean%Fxyz
   call preparevxyz(h_ocean,em_mesh,g_param,g_meshpara,it,dt,h_comcot) ! h_ocean%vxyz
@@ -96,7 +98,7 @@ real(8)             :: tinterval_xy ! 2018.11.14
   end if                                                 ! 2017.11.02
 
 !#[Spherical option]## added pm 2016.11.20
-  if ( iflagspherical .eq. 1 ) then
+  if ( g_param%iflagspherical .eq. 1 ) then
    call meshxyz2xyzspherical(em_mesh,g_meshpara) ! gen em_mesh%lonlatalt and xyzspherical
    call vectorxyz2spherical(em_mesh%lonlatalt,h_ocean%Fxyz,em_mesh%node)
   end if
@@ -104,9 +106,9 @@ real(8)             :: tinterval_xy ! 2018.11.14
 !#[3]## coefficient for surface E and B ## 2016.11.20 modified for spherical option
   !CALL PREPOBSCOEFF_YZ(em_mesh,l_line,obs_yz,g_param)
   if ( icalerrflag .ge. 2 ) then ! 2017.10.26
-   if (ixyflag .eq. 1) CALL PREPOBSCOEFF_XY(    em_mesh,l_line,obs_xy,g_param)
-   if (ixyflag .eq. 2) CALL PREPOBSCOEFF_XYSBTM(em_mesh,l_line,obs_xy,g_param)
-   CALL PREPOBSCOEFF(em_mesh,l_line,obs_sites,g_param)
+   if (g_param%ixyflag .eq. 1) CALL PREPOBSCOEFF_XY(    em_mesh,l_line,obs_xy,ki_mesh,g_param)
+   if (g_param%ixyflag .eq. 2) CALL PREPOBSCOEFF_XYSBTM(em_mesh,l_line,obs_xy,ki_mesh,g_param)
+                               CALL PREPOBSCOEFF(em_mesh,l_line,obs_sites,ki_mesh,g_param)
   end if ! 2017.10.26
 
 !#[4]## prepare Global MATRIX Array
@@ -128,11 +130,12 @@ real(8)             :: tinterval_xy ! 2018.11.14
   ! allocate (bxyz_yz(obs_yz%nobs,3),exyz_xy(obs_xy%nobs,3))
   allocate(  fsn0(nline),fsn1(nline),fsn2(nline), fse(nline),b_vec(nline) )
   allocate(  bxyz_xy   (obs_xy%nobs,   3), exyz_xy(obs_xy%nobs,3))
-  allocate(  bxyz_sites(obs_sites%nobs,3))
+  allocate(  bxyz_sites(obs_sites%nobs,3), exyz_sites(obs_sites%nobs,3)) ! 2021.07.26
+  allocate(  vfxyz_sites(obs_sites%nobs,3), exyz_total_sites(obs_sites%nobs,3)) ! 2021.07.26
 
 !#[6]## time loop starts
   if ( icalerrflag .ge. 2 ) then ! 1 for err, 2 for cal, 3 for both 2017.10.26
-   CALL OPENOBSFILE(obs_sites,g_param)
+   CALL OPENOBSFILE(obs_sites,g_param) ! modified on 2021.07.26 for output of electric field
   end if ! 2017.10.26
   if (icalerrflag .eq. 1 .or. icalerrflag .eq. 3) then
    CALL OPENERRFILE(g_param,e_divrot)
@@ -157,7 +160,7 @@ real(8)             :: tinterval_xy ! 2018.11.14
      end if
 
      if ( icalerrflag    .ge. 2  ) then ! 2017.10.26
-     if ( iflagspherical .eq. 1  ) then
+     if ( g_param%iflagspherical .eq. 1  ) then
        call vectorxyz2spherical(em_mesh%lonlatalt,h_ocean%vxyz,em_mesh%node)
      end if
      end if ! 2017.10.26
@@ -167,19 +170,19 @@ real(8)             :: tinterval_xy ! 2018.11.14
       CALL forward_rhs(A,em_mesh,h_ocean,l_line,b_vec,fsn0,fsn1,igroup,dt,it,g_param)
       CALL PARDISOphase3(B,b_vec,nline,fsn2)
      end if                        ! 2017.10.26
+     !# calculate electric field E=-dA/dt
+     fse=-(3.*fsn2 - 4.*fsn1 + fsn0)/2./dt  ! Second order backward Euler
 
-!#[9]## calculate xy plain data
+!#[9]## calculate xy grid map data
    ! seafloor magnetic field: B=rotA
    ! CALL CALEB(obs_yz,fsn2,nline,bxyz_yz,2)
    if ( icalerrflag .ge. 2 ) then ! 2017.10.26
-   if (ixyflag .ge. 1 .and. mod(it,int(tinterval_xy/dt)) .eq. 0 ) then ! 2018.11.14
+   if ( g_param%ixyflag .ge. 1 .and. mod(it,int(g_param%tinterval_xy/dt)) .eq. 0 ) then ! 2018.11.14
      !#[9-1]## bxyz
-     CALL CALEB(obs_xy,fsn2,nline,bxyz_xy,2) ! when ixyflag = 1 or 2
+     CALL CALEB(obs_xy,fsn2,nline,bxyz_xy,2) ! when g_param%ixyflag = 1 or 2
      CALL EBXYZOUT(obs_xy,bxyz_xy,it,2,iflag,g_param)  ! output bxyz for obs 2018.11.14
 
      !#[9-2]## IXYH
-     !# calculate seafloor electric field E=-dA/dt
-     fse=-(3.*fsn2 - 4.*fsn1 + fsn0)/2./dt  ! Second order backward Euler
      CALL CALEB(obs_xy,fse,nline,exyz_xy,1) ! exyz added on 2016.11.20
      CALL IXYHOUT(obs_xy,exyz_xy,h_ocean,it,g_param,iflag)
      !CALL EBXYZOUT(obs_xy,exyz,it,1)   ! output electric field
@@ -194,8 +197,11 @@ real(8)             :: tinterval_xy ! 2018.11.14
 !#[10]## cal site time series data
 !  CALL EBXYZOUT(obs_yz,bxyz_yz,it,2)  ! commented out on July 16, 2016
    if ( icalerrflag .ge. 2 ) then ! 2017.10.26
-    CALL CALEB(obs_sites,fsn2,nline,bxyz_sites,2)
-    CALL EBXYZOUT_TS(obs_sites,bxyz_sites,it,dt) ! TS : time series m_obs_type.f90
+    CALL CALEB(obs_sites,fsn2,nline,bxyz_sites,2) ! magnetic field
+    CALL CALEB(obs_sites,fse, nline,exyz_sites,1) ! electric field added 2021.07.26
+    CALL CALETOTAL(g_param,obs_sites,h_ocean,exyz_sites,vfxyz_sites,exyz_total_sites) ! 2021.07.26
+    CALL BXYZOUT_TS(obs_sites,bxyz_sites,it,dt) ! TS : time series m_obs_type.f90
+    CALL EXYZOUT_TS(obs_sites,exyz_sites,vfxyz_sites,exyz_total_sites,it,dt) ! TS : time series m_obs_type.f90 2021.07.26
    end if                         ! 2017.10.26
 
 end do !# time loop end
@@ -207,8 +213,32 @@ end if                                                 ! 2017.10.26
 
 end program n_ebfem_tsunamiEM
 
-!
+!###################################################################
+!# coded on 2021.07.27
+subroutine READKI23DPTR(g_param,ki_mesh)
+use mesh_type
+use param
+implicit none
+type(mesh),          intent(in)    :: ki_mesh
+type(param_forward), intent(inout) :: g_param
+integer(4)                         :: ndat,i
 
+g_param%nodek = ki_mesh%node ! # of node in polygon_ki.msh
+allocate( g_param%ki23dptr(2,g_param%nodek) )
+
+open(1,file=g_param%ki23dfile)
+ read(1,*) ndat
+ if ( ndat .ne. ki_mesh%node ) goto 99
+ do i=1,ndat
+  read(1,*) g_param%ki23dptr(1:2,i)
+ end do
+close(1)
+
+return
+99 continue
+write(*,*) "GEGEGE! ndat=",ndat,"is not equal to nodek",g_param%nodek
+stop
+end
 !###################################################################
 ! modified for spherical on 2016.11.20
 ! iflag = 0 for xyz
@@ -249,7 +279,8 @@ return
 end
 !###################################################################
 subroutine CALEB(obs,fs,nline,bxyz,iebflag)
-! iflag=1 -> electric field, iflag=2 -> magnetic field
+! iflag=1 -> electric field
+! iflag=2 -> magnetic field
 use matrix
 use obs_type ! see m_obs_type.f90
 implicit none
@@ -265,6 +296,50 @@ do i=1,3 ! i-th component
 end do
 return
 !
+end
+
+!###################################################################
+!# coded on Jul 27, 2021
+subroutine CALETOTAL(g_param,obs,h_ocean,exyz,vfxyz,exyz_total)
+use oceanFvxyz   ! see m_oceanFvxyz.f90
+use obs_type     ! see m_obs_type.f90
+use outerinnerproduct
+use param        ! m_param.f90
+use spherical
+implicit none
+type(param_forward),intent(in)     :: g_param
+type(ocean_data),   intent(in)     :: h_ocean
+type(obs_info),     intent(in)     :: obs
+real(8),            intent(in)     :: exyz(      obs%nobs,3)
+real(8),            intent(inout)  :: vfxyz(     obs%nobs,3)
+real(8),            intent(inout)  :: exyz_total(obs%nobs,3)
+real(8),allocatable,dimension(:,:) :: Fxyz,vxyz,vF,vF_obs
+integer(4)                         :: node,nobs,i
+
+node           = h_ocean%node
+nobs           = obs%nobs
+allocate(Fxyz(3,node),vxyz(3,node),vF(3,node),vF_obs(3,nobs))
+Fxyz           = h_ocean%Fxyz  ! [nT]
+vxyz           = h_ocean%vxyz  ! [mm/sec]
+
+!#[1]## calculate
+do i=1,node
+ vF(:,i)=outer(vxyz(:,i),Fxyz(:,i)) ! 10^-12 V/m
+end do
+call mul_matcrs_rv(obs%coeff_vF,vF(1,:),node,vF_obs(1,:))
+call mul_matcrs_rv(obs%coeff_vF,vF(2,:),node,vF_obs(2,:))
+call mul_matcrs_rv(obs%coeff_vF,vF(3,:),node,vF_obs(3,:))
+if (g_param%iflagspherical .eq. 1) then
+ call vectorspherical2xyz(obs%lonlatalt,vF_obs,nobs) ! m_spherical.f90
+end if
+
+!# set output
+do i=1,nobs
+ vfxyz(i,1:3) = vF_obs(1:3,i) * 1.d-6 ! 10^-12 V/m -> [mV/km]
+ exyz_total(i,1:3)= exyz(i,1:3) + vfxyz(i,1:3) ![mV/km]
+end do
+
+return
 end
 
 !###################################################################
@@ -288,14 +363,13 @@ real(8),allocatable,dimension(:,:) :: Fxyz,vxyz,vF,vF_obs,ixyh
 character(6)                       :: num
 real(8),allocatable,dimension(:)   :: h
 real(8)                            :: x2(2),x3(3,3),exyh,phaseE2N,sigma_ocean
-integer(4)                         ::  i,j,nobs,node,iflagspherical
+integer(4)                         ::  i,j,nobs,node
 character(70)                      :: outputfolder ! 2018.11.14
 integer(4)                         :: lenout       ! 2018.11.14
 
 !#[0]## set h
 outputfolder   = g_param%outexyzfolder   ! 2018.11.14
 lenout         = len_trim(outputfolder)  ! 2018.11.14
-iflagspherical = g_param%iflagspherical
 nobs           = obs%nobs
 node           = h_ocean%node
 allocate(Fxyz(3,node),vxyz(3,node),vF(3,node),vF_obs(3,nobs),ixyh(2,nobs))
@@ -315,7 +389,7 @@ end do
  call mul_matcrs_rv(obs%coeff_vF,vF(1,:),node,vF_obs(1,:))
  call mul_matcrs_rv(obs%coeff_vF,vF(2,:),node,vF_obs(2,:))
  call mul_matcrs_rv(obs%coeff_vF,vF(3,:),node,vF_obs(3,:))
- if (iflagspherical .eq. 1) then
+ if (g_param%iflagspherical .eq. 1) then
   call vectorspherical2xyz(obs%lonlatalt,vF_obs,nobs) ! m_spherical.f90
  end if
  do i=1,nobs
@@ -332,7 +406,7 @@ if (iflag .eq. 0) then
  end do
 end if
 
-!#[2]## output bxyz
+!#[3]## output bxyz
 write(num,'(i6.6)') it
  open(1,file=outputfolder(1:lenout)//"ixyh_"//obs%name(1:4)//num(1:6)//".dat")
  do i=1,nobs
@@ -454,7 +528,7 @@ end
 !####################################################### PREPOBSCOEFF_XYSBTM
 ! copied from ../FEM_node/n_bzfem.f90
 ! adjusted to edge-FEM code
-subroutine PREPOBSCOEFF_XYSBTM(em_mesh,l_line,obs_xy,g_param)
+subroutine PREPOBSCOEFF_XYSBTM(em_mesh,l_line,obs_xy,ki_mesh,g_param)
 use param ! include lonorigin and latorigin on 2016.11.20
 use mesh_type
 use line_type
@@ -467,11 +541,11 @@ type(mesh),             intent(in)     :: em_mesh
 type(line_info),        intent(in)     :: l_line
 type(param_forward),    intent(in)     :: g_param
 type(obs_info),         intent(inout)  :: obs_xy
-type(mesh)                             :: ki_mesh
+type(mesh),             intent(in)     :: ki_mesh
 type(grid_list_type)                   :: glist
-integer(4),allocatable, dimension(:,:) :: ki23dptr,n3
-integer(4)                             :: nmax,i,j,k,ndat,iflagspherical
-character(70)                          :: ki23dfile
+integer(4),allocatable, dimension(:,:) :: n3
+integer(4)                             :: ki23dptr(2,g_param%nodek) ! 2021.07.27
+integer(4)                             :: nmax,i,j,k,ndat
 real(8)                                :: xyz(3,em_mesh%node)
 integer(4)                             :: nodes,ntets, ntrik,ntet,nodek
 real(8)                                :: x3(3),lonorigin,latorigin
@@ -479,28 +553,17 @@ real(8)                                :: xyzminmax(6)
 integer(4)                             :: nx,ny,nz
 
 !#[0]## read ki_mesh and set input
-   CALL READMESH_TOTAL(ki_mesh, g_param%pokimsh)
-   allocate ( ki23dptr(2,ki_mesh%node),n3(ki_mesh%ntri,3) )
+   allocate ( n3(ki_mesh%ntri,3) )
    nodek     = ki_mesh%node
    ntrik     = ki_mesh%ntri
-   ki23dfile = g_param%ki23dfile
    n3        = ki_mesh%n3
+   ki23dptr  = g_param%ki23dptr  ! 2021.07.27
    xyz       = em_mesh%xyz
    obs_xy%nobs=ntrik
    obs_xy%name="xy2D"
-   iflagspherical = g_param%iflagspherical ! added on 2016.11.20
    lonorigin = g_param%lonorigin ! added pn 2016.11.20
    latorigin = g_param%latorigin ! added on 2016.11.20
    xyzminmax = g_param%xyzminmax
-
-!#[1]## read additional files
-  open(1,file=ki23dfile)
-   read(1,*) ndat
-   if ( ndat .ne. nodek) goto 99
-   do i=1,ndat
-    read(1,*) ki23dptr(1:2,i)
-   end do
-  close(1)
 
 !#[1-1]# prepare coordinate of observatories for seafloor
   CALL allocate_real_crs_with_steady_ncolm(obs_xy%coeff_vF,ntrik,3) ! 2016.11.20
@@ -511,17 +574,17 @@ integer(4)                             :: nx,ny,nz
    do j=1,3
      k=n3(i,j) ! k is horizontal node id, ki23dptr(i,:), where i=1 surface, i=2 for seafloor
      x3(1:3) = x3(1:3) + xyz(1:3,ki23dptr(2,k))/3.d0 + (/0.d0,0.d0,0.001d0/)/3.d0 !1 m above seafloor/ground
-     obs_xy%coeff_vF%item((i-1)*3+j)=ki23dptr(1,k) ! 2016.11.20
+     obs_xy%coeff_vF%item((i-1)*3+j)=ki23dptr(2,k) ! 2016.11.20 1 -> 2, 2021.07.27
      obs_xy%coeff_vF%val ((i-1)*3+j)=1/3.d0        ! 2016.11.20
    end do
      obs_xy%coeff_vF%stack(i)=3*i                  ! 2016.11.20
-   obs_xy%xyz_obs(1:3,i)=x3(1:3)
+     obs_xy%xyz_obs(1:3,i)=x3(1:3)
   end do
 
 !#[OPTION]## iflagspherical = 1  ##
-  if (iflagspherical .eq. 1) then
-    allocate(obs_xy%xyzspherical(3,ntrik)) ! added on 2016.11.19
-    allocate(obs_xy%lonlatalt(3,ntrik)   ) ! added on 2016.11.19
+  if ( g_param%iflagspherical .eq. 1 ) then   ! 2021.07.27
+    allocate( obs_xy%xyzspherical(3,ntrik) )  ! added on 2016.11.19
+    allocate( obs_xy%lonlatalt(3,ntrik)    )  ! added on 2016.11.19
     do i=1,ntrik
      call xyz2lonlatalt(obs_xy%xyz_obs(:,i),lonorigin,latorigin,obs_xy%lonlatalt(:,i))
      call lonlatalt2xyzspherical(obs_xy%lonlatalt(:,i),obs_xy%xyzspherical(:,i))
@@ -540,13 +603,10 @@ write(*,*) "categolize elements end"
 
 !#[3]# allocate coeffobs and calculate
 !cal coeffobs(1:2,1:3)
-CALL CALCOEFF_LINE(em_mesh,l_line,glist,obs_xy,iflagspherical)
+CALL CALCOEFF_LINE(em_mesh,l_line,glist,obs_xy,g_param%iflagspherical)
 
 write(*,*) "### PREPOBSCOEFF_XYSBTM END!! ###"
 return
-99 continue
-write(*,*) "GEGEGE! ndat=",ndat,"is not equal to nodek",nodek
-stop
 end
 
 !####################################################### PREPOBSCOEFF_XY
@@ -554,7 +614,7 @@ end
 !
 ! copied from ../FEM_node/n_bzfem.f90
 ! adjusted to edge-FEM code
-subroutine PREPOBSCOEFF_XY(em_mesh,l_line,obs_xy,g_param)
+subroutine PREPOBSCOEFF_XY(em_mesh,l_line,obs_xy,ki_mesh,g_param)
 use param
 use mesh_type
 use line_type
@@ -564,25 +624,26 @@ use fem_edge_util
 use spherical
 implicit none
 !integer(4),intent(in) :: nobs ! # observatory
-type(param_forward),  intent(in)  :: g_param
-type(mesh),           intent(in)  :: em_mesh
-type(line_info),      intent(in)  :: l_line
-type(obs_info),intent(out) :: obs_xy
-type(grid_list_type) :: glist
-type(mesh) :: ki_mesh
+type(param_forward),   intent(in)     :: g_param
+type(mesh),            intent(in)     :: em_mesh
+type(line_info),       intent(in)     :: l_line
+type(obs_info),        intent(out)    :: obs_xy
+type(grid_list_type)                  :: glist
+type(mesh),            intent(in)     :: ki_mesh
 real(8),   allocatable,dimension(:)   :: zobs
-integer(4),allocatable,dimension(:,:) :: ki23dptr
-character(70) :: ki23dfile
+integer(4)                            :: ki23dptr(2,g_param%nodek) ! 2021.07.27
 real(8)    :: xyzminmax(6)
 integer(4) :: nx,ny,nz ! please lower if corresponding element was not found
-integer(4) :: ntet,i,j,ii,nobs,ndat,nodek,iflagspherical,ixydepth
+integer(4) :: ntet,i,j,ii,nobs,ndat,nodek,ixydepth
 real(8)    :: x3(3),xmin,xmax,ymin,ymax,dx,dy,lonorigin,latorigin
 integer(4) :: nnx,nny,nnz=1 ! vertical plane
+integer(4) :: iflag    ! for PREPZOBS 2021.07.27
 real(8)    :: z1 ! [km] for depth of xy plane
 
 !#[0]## set input
- ki23dfile      = g_param%ki23dfile
- z1             = g_param%depth_xy ! [km]
+ nodek          = g_param%nodek     ! 2021.07.27
+ ki23dptr       = g_param%ki23dptr  ! 2021.07.27
+ z1             = g_param%depth_xy  ! [km]
  ixydepth       = g_param%ixydepth
  nnx            = g_param%nx
  nny            = g_param%ny
@@ -591,7 +652,6 @@ real(8)    :: z1 ! [km] for depth of xy plane
  obs_xy%name    = "xy2D"
  lonorigin      = g_param%lonorigin           ! 2016.11.20
  latorigin      = g_param%latorigin           ! 2016.11.20
- iflagspherical = g_param%iflagspherical ! 1 for spherical
  xyzminmax      = g_param%xyzminmax           ! 2016.11.20
  xmin           = xyzminmax(1)
  xmax           = xyzminmax(2)
@@ -616,25 +676,15 @@ real(8)    :: z1 ! [km] for depth of xy plane
   !#[O-1]## read ki_mesh and set input added on 2016.11.20
   if (ixydepth .eq. 2) then
    allocate(zobs(nobs) )
-   CALL READMESH_TOTAL(ki_mesh, g_param%pokimsh)
-   nodek  = ki_mesh%node
-   !#[O-2]## read ki23dptr
-   allocate(ki23dptr(2,ki_mesh%node))
-   open(1,file=ki23dfile)
-    read(1,*) ndat
-    if ( ndat .ne. nodek) goto 99
-    do i=1,ndat
-     read(1,*) ki23dptr(1:2,i)
-    end do
-   close(1)
    !#[O-3]## modify zcoordinate of obs 1m beneath the seafloor
-    CALL PREPZOBS(obs_xy,em_mesh,ki_mesh,ki23dptr,g_param,1) ! 1 for cal coeff_vF
+    iflag = 1 ! 0 : without vf_coeff, 1 : for getting vf_coeff
+    CALL PREPZOBS(obs_xy,em_mesh,ki_mesh,ki23dptr,g_param,iflag) ! 2021.07.26
    end if
 
 !#[OPTION]## iflagspherical = 1  ##
-  if (iflagspherical .eq. 1) then
-    allocate(obs_xy%xyzspherical(3,nobs)) ! added on 2016.11.19
-    allocate(obs_xy%lonlatalt(3,nobs)   ) ! added on 2016.11.19
+  if ( g_param%iflagspherical .eq. 1 ) then ! 2021.07.27
+    allocate(obs_xy%xyzspherical(3,nobs))   ! added on 2016.11.19
+    allocate(obs_xy%lonlatalt(3,nobs)   )   ! added on 2016.11.19
     do i=1,nobs
      call xyz2lonlatalt(obs_xy%xyz_obs(:,i),lonorigin,latorigin,obs_xy%lonlatalt(:,i))
      call lonlatalt2xyzspherical(obs_xy%lonlatalt(:,i),obs_xy%xyzspherical(:,i))
@@ -650,7 +700,7 @@ CALL classifyelement2grd(em_mesh,glist)   ! classify ele to glist,see m_mesh_typ
 write(*,*) "categolize elements end"
 
 !#[3]# allocate coeffobs and calculate
-CALL CALCOEFF_LINE(em_mesh,l_line,glist,obs_xy,iflagspherical) ! cal coeffobs(1:2,1:3)
+CALL CALCOEFF_LINE(em_mesh,l_line,glist,obs_xy,g_param%iflagspherical) ! cal coeffobs(1:2,1:3)
 
 write(*,*) "### PREPOBSCOEFF_XY END!! ###"
 return
@@ -674,16 +724,16 @@ implicit none
 type(mesh),           intent(in)  :: em_mesh
 type(line_info),      intent(in)  :: l_line
 type(param_forward),  intent(in)  :: g_param
-type(obs_info),intent(out) :: obs_yz
-real(8)   :: xyzminmax(6)
+type(obs_info),       intent(out) :: obs_yz
+real(8)                           :: xyzminmax(6)
 ! (1,(1,2,3)) for edge basis fun (x,y,z), (2,(1,2,3)) for face basis fun
-integer(4),parameter :: nx=300,ny=300,nz=50 ! please lower if corresponding element was not found
+integer(4),           parameter :: nx=300,ny=300,nz=50 ! please lower if corresponding element was not found
 !# internal variables
-type(grid_list_type) :: glist
-integer(4) :: ntet,i,j,ii,nobs
-real(8)    :: x3(3),ymin,ymax,zmin,zmax,dy,dz
-integer(4) :: nnx=1,nny=150,nnz=150 ! vertical plane
-real(8),parameter :: x=0.d0 ! [km]
+type(grid_list_type)              :: glist
+integer(4)                        :: ntet,i,j,ii,nobs
+real(8)                           :: x3(3),ymin,ymax,zmin,zmax,dy,dz
+integer(4)                        :: nnx=1,nny=150,nnz=150 ! vertical plane
+real(8),              parameter   :: x=0.d0 ! [km]
 nobs=nny*nnz
 obs_yz%nobs=nobs
 obs_yz%name="yz2D"
@@ -735,13 +785,14 @@ use obs_type
 use fem_edge_util
 use spherical ! added on 2016.11.20
 implicit none
-type(mesh),intent(in) :: h_mesh
-type(line_info),intent(in) :: l_line
-type(grid_list_type),intent(in) :: glist
-integer(4),optional,intent(in) :: iflagspherical
-type(obs_info),intent(inout) :: obs
+type(mesh),          intent(in)    :: h_mesh
+type(line_info),     intent(in)    :: l_line
+type(grid_list_type),intent(in)    :: glist
+integer(4), optional,intent(in)    :: iflagspherical
+type(obs_info),      intent(inout) :: obs
 real(8),allocatable,dimension(:,:) :: xyz,xyz_obs
 real(8),allocatable,dimension(:,:) :: xyzspherical,xyzspherical_obs
+
 !# internal variables
 integer(4) :: i,j,l,nrow,ncolm,ii,jj,iele,n6(6),iflag
 real(8) :: x3(3),elm_xyz(3,4),r6(6),w(3,6),wfe(3,6),len(6),v,a4(4),coeff(3,6),coeff_rot(3,6)

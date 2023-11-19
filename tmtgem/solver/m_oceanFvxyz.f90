@@ -20,8 +20,8 @@ type ocean_data
  integer(4),allocatable,dimension(:)   :: surfptr ! [IPL] node id on ocean surface in 3-D mesh space
  integer(4),allocatable,dimension(:)   :: ocean2emptr ! [nodes] node id in 3-D em mesh
  integer(4),allocatable,dimension(:)   :: em2oceanptr ! [node]  node id in 3-D ocean mesh
- real(8),   allocatable,dimension(:,:) :: Fxyz
- real(8),   allocatable,dimension(:,:) :: vxyz
+ real(8),   allocatable,dimension(:,:) :: Fxyz ! (3,npoints_in_ocean) 2021.06.24
+ real(8),   allocatable,dimension(:,:) :: vxyz ! (3,npoints_in_ocean) 2021.06.24
  !# for div error 2017.11.02
  integer(4)            :: ntets            ! number of ocean elements         2017.11.02
  integer(4)            :: ntris            ! number of surface triangles      2017.11.02
@@ -167,8 +167,8 @@ type(mesh),         intent(in) :: em_mesh
 type(param_forward),intent(in) :: g_param
 type(meshpara),     intent(in) :: g_meshpara
 type(ocean_data),intent(inout) :: h_ocean
-integer(4) :: nodes,iflag_geomag
-integer(4) :: i,node,inod
+integer(4)                     :: nodes,iflag_geomag
+integer(4)                     :: i,j,node,inod,unit ! 2019.01.25
 
 !#[0]## set input
 !# iflag_geomag =
@@ -192,6 +192,15 @@ iflag_geomag  = g_param%iflag_geomag
   call geomaghomo(h_ocean,g_param)
 
  end if
+
+!#[2]## OUTPUT prepared geomag field 2019.01.25
+ open(file=trim(g_param%outbxyzfolder)//"geomag.out",newunit=unit) ! 2019.01.25
+  do i=1,h_ocean%IPL
+    j=h_ocean%surfptr(i)             ! 2019.01.25
+    write(unit,'(5g15.7)') em_mesh%xyz(1:2,j),h_ocean%Fxyz(1:3,j) ! 2019.01.25
+  end do
+ close(unit)
+
 
 return
 end
@@ -368,18 +377,18 @@ return
 end
 !########################################## geomagigrf
 !# coded 2018.11.14
-subroutine geomagigrf(h_ocean,em_mesh,g_param,g_meshpara)
-use IGRF
-implicit none
-type(mesh),         intent(in)    :: em_mesh
-type(param_forward),intent(in)    :: g_param
-type(meshpara),     intent(in)    :: g_meshpara
-type(ocean_data),   intent(inout) :: h_ocean
-type(grid_xy)      :: xygrid
-type(grid_data_2D) :: h_grd,Fxyz_grd
-character(70)      :: xgrdfile, ygrdfile,magfile
-integer(4)         :: ivxyzflagkl(h_ocean%IPL,3)
-real(8)            :: vxyzcoef(h_ocean%IPL,2)
+ subroutine geomagigrf(h_ocean,em_mesh,g_param,g_meshpara)
+ use IGRF
+ implicit none
+ type(mesh),         intent(in)    :: em_mesh
+ type(param_forward),intent(in)    :: g_param
+ type(meshpara),     intent(in)    :: g_meshpara
+ type(ocean_data),   intent(inout) :: h_ocean
+ type(grid_xy)      :: xygrid
+ type(grid_data_2D) :: h_grd,Fxyz_grd
+ character(70)      :: xgrdfile, ygrdfile,magfile
+ integer(4)         :: ivxyzflagkl(h_ocean%IPL,3)
+ real(8)            :: vxyzcoef(h_ocean%IPL,2)
 
 !#[1]## set input
  xgrdfile = g_param%xgrdfile_f
@@ -528,7 +537,7 @@ end do
 write(*,*) "### MKVXYZCOEF END!! ###"
 return
 end
-!###################################################### CALOCEANVXYZF
+!###################################################### CALOCEANVXYZ
 subroutine CALOCEANVXYZ(vxyh_grd,h_grd,h_ocean,h_comcot,em_mesh,g_meshpara, vxyz)
 implicit none
 type(grid_data_2D),       intent(in)  :: vxyh_grd,h_grd

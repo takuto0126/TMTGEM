@@ -75,9 +75,12 @@ type param_forward
  real(8)       :: depth_xy
  integer(4)    :: nx,ny     ! grid for same depth value
  real(8)       :: tinterval_xy ! [sec] time interval for xy plain output 2018.11.14 for ixyflag=1,2
- !#[6-2]## when ixyflag = 2, extrude mesh data are required
+ 
+!#[6-2]## when ixyflag = 2, extrude mesh data are required
  character(70) :: pokimsh   ! polygon_ki mesh file
- character(70) :: ki23dfile! node pointer from pokimsh to 2D ocean surface id
+ character(70) :: ki23dfile ! node pointer from pokimsh to 2D ocean surface id
+ integer(4)    :: nodek     ! node of polygon_ki.msh                 2021.07.27
+ real(8),allocatable,dimension(:,:) ::  ki23dptr ! ki23dptr(2,nodek) 2021.07.27
 
  !#[7]## conductivity information
  ! normally, cond(1) for air, cond(2) for ocean, cond(3) for crust
@@ -213,6 +216,10 @@ write(*,*) "Please enter output bxyz, exyz, vxyz folder with the end of /"
 read(input,10) c_param%outbxyzfolder ! 2018.11.14
 read(input,10) c_param%outexyzfolder ! 2018.11.14
 read(input,10) c_param%outvxyzfolder ! 2018.11.14
+write(*,'(a)') c_param%outbxyzfolder ! 2019.01.25
+write(*,'(a)') c_param%outexyzfolder ! 2019.01.25
+write(*,'(a)') c_param%outvxyzfolder ! 2019.01.25
+
 
 !#[5]## observatory info
 write(*,*) "Please enter # of observatories"
