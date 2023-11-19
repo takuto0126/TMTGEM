@@ -27,7 +27,7 @@ OBJ         =  comcot.exe
 OBJECTS     =  type_module.o initialization.o output.o deform.o mass.o moment.o boundaries.o all_grids.o hotstart.o landslide.o wavemaker.o dispersion.o comcot.o
 
 #OPT         =  -O2 -F1000000000
-OPT = -mkl=parallel -O -g -traceback
+OPT = -qmkl=parallel -O -g -traceback
 
 $(OBJ):  $(OBJECTS)
 	$(F90) $(OBJECTS) $(OPT) -o $(OBJ)

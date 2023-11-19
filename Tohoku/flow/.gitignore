@@ -1,1 +1,4 @@
- *.dat *.TXT *.ps *.pdf
+*.dat
+*.TXT
+*.ps
+*.pdf

@@ -84,6 +84,9 @@ grdf="bz.grd"
 grdvh="vh.grd"
 grdtopo="topo.grd"
 CPT="bz.cpt"
+
+gmt begin "./bxyz/bxyz_xy2D"${1}"_"${2} pdf
+
 gmt makecpt -Cpolar -T-18/18/0.05 > ${CPT}
 gmt surface "vh.dat" -G$grdvh -I3/3 -T0.2 -R$WESN
 gmt surface "tmp.dat" -G$grdf -I3/3 -T1 -R$WESN
@@ -91,28 +94,30 @@ gmt surface $topofile -G$grdtopo -I2/2 -T1 -R$WESN
 
 gmt grdimage $grdf -B$bb -C${CPT} -JX${scl} -K -R${WESN}  -X3 -Y3 > $out21
 
-gmt grdcontour $grdvh -C10 -L10/20 -W0.2,black -JX -K -O >> $out21
+gmt grdcontour $grdvh -C10 -L10/20 -W0.2,black 
 
-gmt psxy "$polygongmt" -JX$scl -R$WESN  -m -K -O -W1,black >> $out21
+gmt plot "$polygongmt"  -m  -W1,black
 
-gmt psxy "$pos5file" -JX$scl -R$WESN -K -L -O -W0.5,black >> $out21
+gmt plot "$pos5file" -L -W0.5,black
 
-gmt grdcontour $grdtopo -C1000 -L-8000/-7000 -W0.2,green -JX -K -O >> $out21
+gmt grdcontour $grdtopo -C1000 -L-8000/-7000 -W0.2,green -JX 
 
-gmt psscale -Dx15.5/6/10/0.3 -B2 -C$CPT -K -O >> $out21
+gmt colorbar -Dx15.5/6+w10/0.3 -B2 -C 
 scl2=17/15 ; range2=0/20/0/15
 
 # B14
-#psxy -R -JX -Sc0.1 -G255/0/0 -K -O << EOF >> $out21
+#psxy -R -JX -Sc0.1 -G255/0/0  << EOF
 #810.366308254877        622.980696018805
 #EOF
 
-gmt pstext -JX$scl2 -R$range2  -W0 -G255 -O <<EOF >> $out21
+gmt pstext -JX$scl2 -R$range2  -W0 -G255 -O <<EOF
 16.9   14.5 16 0 4 RM t = $minute [min]
 16.9   13.8    16 0 4 RM    ${1} * ${dt} [s]
 18.8 12.4 25 0 4 CM ${bcomp}
 18.8 11.6 16 0 4 CM [nT]
 EOF
+
+gmt end show
 
 #=========  plot end =======================
 

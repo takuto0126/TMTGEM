@@ -1,6 +1,6 @@
 # Coded on 11 Nov 2018
 #!/bin/bash
-source /opt/intel/bin/compilervars.sh intel64 # 2021.05.29
+source /opt/intel/oneapi/setvars.sh # 2021.05.29
 
 head="polygon"
 sdir="../../tmtgem/mesh"
