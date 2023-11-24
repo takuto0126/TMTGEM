@@ -75,7 +75,7 @@ close(1)
 end program tmp
 EOF
 ########################    tmp.f end  #####################
-gfortran tmp.f90
+ifort tmp.f90
 ./a.out ## make "tmp.yzc"
 #============ bzplot ===================
 scl=15/15 ; range=0/15/0/15
@@ -83,7 +83,6 @@ bb=a100/a100:"distance\(km\)":WeSn
 grdf="bz.grd"
 grdvh="vh.grd"
 grdtopo="topo.grd"
-CPT="bz.cpt"
 
 gmt begin "./bxyz/bxyz_xy2D"${1}"_"${2} pdf
 
@@ -91,14 +90,14 @@ gmt makecpt -Cpolar -T-18/18/0.05 > ${CPT}
 gmt surface "vh.dat" -G$grdvh -I3/3 -T0.2 -R$WESN
 gmt surface "tmp.dat" -G$grdf -I3/3 -T1 -R$WESN
 gmt surface $topofile -G$grdtopo -I2/2 -T1 -R$WESN
-gmt basemap  -Bxa100+l"distance\(km\)" -Bya100+l"distance\(km\)" -BWeSn -JX${scl} -R${WESN}
-gmt grdimage $grdf -C   -X3 -Y3
+gmt basemap  -Bxa100+l"distance\(km\)" -Bya100+l"distance\(km\)" -BWeSn -JX${scl} -R${WESN} -X3 -Y3
+gmt grdimage $grdf -C   
 gmt grdcontour $grdvh -C10 -L10/20 -W0.2,black 
-gmt plot "$polygongmt"  -m  -W1,black
+gmt plot "$polygongmt"  -W1,black -L
 gmt plot "$pos5file" -L -W0.5,black
 gmt grdcontour $grdtopo -C1000 -L-8000/-7000 -W0.2,green
 
-gmt colorbar -Dx15.5/6+w10/0.3 -B2 -C 
+gmt colorbar -Dx15.5/0+w10/0.3 -B2 -C 
 scl2=17/15 ; range2=0/20/0/15
 
 # B14
@@ -120,6 +119,4 @@ gmt end show
 rm $CPT a.out tmp.f90 vh.dat vh.grd gmt.history tmp.dat
 rm $grdtopo
 rm $grdf
-gv $out21 &
-open $out21
 
