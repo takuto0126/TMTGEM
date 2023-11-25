@@ -75,7 +75,8 @@ close(1)
 end program tmp
 EOF
 ########################    tmp.f end  #####################
-ifort tmp.f90
+FC=ifort
+$FC tmp.f90
 ./a.out ## make "tmp.yzc"
 #============ bzplot ===================
 scl=15/15 ; range=0/15/0/15
@@ -99,11 +100,6 @@ gmt grdcontour $grdtopo -C1000 -L-8000/-7000 -W0.2,green
 
 gmt colorbar -Dx15.5/0+w10/0.3 -B2 -C 
 scl2=17/15 ; range2=0/20/0/15
-
-# B14
-#psxy -R -JX -Sc0.1 -G255/0/0  << EOF
-#810.366308254877        622.980696018805
-#EOF
 
 gmt text -JX$scl2 -R$range2  -W0 -G255 <<EOF
 16.9   14.5  t = $minute [min]
