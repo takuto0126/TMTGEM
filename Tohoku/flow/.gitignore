@@ -1,4 +1,7 @@
-*.dat
+# ts_location.dat should be excluded
+z*.dat
+m*.dat
+n*.dat
 *.TXT
 *.ps
 *.pdf
