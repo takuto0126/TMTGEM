@@ -1,1 +1,3 @@
-*.xyz *.grd
+*.xyz
+*.grd
+*.sh
