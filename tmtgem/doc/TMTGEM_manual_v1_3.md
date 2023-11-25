@@ -57,22 +57,22 @@ Please make the following packages installed in your PC
 [Gmsh](http://gmsh.info/) for mesh generation
 Intel fortran compiler with mkl library (confirm you can use “ifort –mkl=parallel ***”)
 GMT ([generic mapping tool](https://www.soest.hawaii.edu/gmt/)) for vieweing simulation results
-ghostscript (only for “gv” commands, e.g. in plot_z.sh in TMTGEMv1.1/sample1/flow)
+ghostscript (only for “gv” commands, e.g. in plot_z.sh in TMTGEM/Tohoku/flow)
 
 ### Required data set
 Bathymetry data: please download xyz data from https://topex.ucsd.edu/WWW_html/mar_topo.html
 But downward positive bathymetry data is assumed for COMCOT and TMTGEM
-Please use, e.g. TMTGEMv1.1/Tohoku/topo/mktopo.sh, to change altitude signs.
+Please use, e.g. TMTGEM/Tohoku/topo/mktopo.sh, to change altitude signs.
 (Optional) Conductivity data: You can use ocean conductivity data by downloading
 (Optional) Background Earth’s magnetic field data
 
 ## 4 Run sample codes <a id="Run_sample_simulations"></a>
 Run TMTGEM anyway!! 
-In the home folder of TMTGEMv1.1/, four folders, Tohoku/, Chile/, Mediterranean/, and Easter/, are those for example simulations. Rough run time is listed in Table 1.
+In the home folder of TMTGEM/, four folders, Tohoku/, Chile/, Mediterranean/, and Easter/, are those for example simulations. Rough run time is listed in Table 1.
 
 Table 1. Overview of sample simulations and required time
 
-TMTGEMv1.1/
+TMTGEM/
 
 |Command	| Tohoku/    |Tohoku/  | Tohoku/ |Tohoku/ | Easter/ | Chile/ | Mediterranean/ | 
 |:----------:|:-----:|:----:|:----:|:----:|:----:|:----:|:----:|
@@ -86,11 +86,11 @@ TMTGEMv1.1/
 As preparation, tsunami flow data and simulation mesh are necessary for tsunami electromagnetic simulations. Implement the following commands in terminal for preparation:
 
 ### run comcot 
-	$ cd TMTGEMv1.1/Tohoku/flow
+	$ cd TMTGEM/Tohoku/flow
     $ ./run_comcot.sh                         (generate tsunami flow data)
 ### mesh generattion for TMTGEM
 	$ ./plot_z.sh 000600                      (check tsunami height, see Fig. 1a)
-	$ cd TMTGEMv1.1/Tohoku/mesh
+	$ cd TMTGEM/Tohoku/mesh
 	$ ./tetmeshgen.sh                         (mesh generation)
 ### check generated mesh
 	$ gmsh polygonki.msh                      (check generated 2d mesh, see Fig. 1b)
@@ -98,7 +98,7 @@ As preparation, tsunami flow data and simulation mesh are necessary for tsunami 
 
 When the preparation is successful, users can see the following figures.
 ![Fig1](./images/Fig1.png)
-Fig. 1. (a) Tsunami height drawn by “./plot_z.sh 000600” in Tohoku/flow/. (b) 2-D mesh of polygonki.msh drawn by “gmsh polygonki.msh” in Tohoku/mesh/. (c) Final 3-D mesh drawn by “gmsh em3d.msh” in sample1/mesh/.
+Fig. 1. (a) Tsunami height drawn by “./plot_z.sh 000600” in Tohoku/flow/. (b) 2-D mesh of polygonki.msh drawn by “gmsh polygonki.msh” in Tohoku/mesh/. (c) Final 3-D mesh drawn by “gmsh em3d.msh” in Tohoku/mesh/.
 
 ## 4.1 Sample 1: Tohoku (small mesh)<a id="Tohoku_small"></a>
 Sample simulations in Tohoku/em/ with Tohoku/mesh/em3d.msh
@@ -113,7 +113,7 @@ There are currently three types of example simulations using a relatively small 
 
 All the above three samples generate almost the same results for the given short time evolution period of t = 5 min. Please confirm that TMTGEM runs well with several types of control files, e.g. Tohoku/em/tohoku.ctl. In each file, please implement the following commands:
 
-	$ cd TMTGEMv1.1/Tohoku/em         (case for sample1/em)
+	$ cd TMTGEM/Tohoku/em         (case for Tohoku/em)
 	$ ./run.sh                        (run TMTGEM simulation)
 ### simulation running
 	$ ./plotgeomag.sh                 (check the used ambient magnetic field; Fig. 2)
@@ -124,31 +124,31 @@ Users can see the following figures when sample simulation finished successfully
 
  
 ![Fig2a](./images/Fig2a.png)
-Fig. 2a. Used geomagnetic main field of (Fx, Fy, Fz) = (0,0,-35000) [nT] (geomag.pdf drawn by ./plotgeomag.sh in sample1/em/ or sample1/em_woa, after simulations.)
+Fig. 2a. Used geomagnetic main field of (Fx, Fy, Fz) = (0,0,-35000) [nT] (geomag.pdf drawn by ./plotgeomag.sh in Tohoku/em/ or Tohoku/em_woa, after simulations.)
 
 
  
 ![Fig2b](./images/Fig2b.png)
-Fig. 2b. Case for use of IGRF main fields. (geomag.pdf drawn by ./plotgeomag.sh in sample1/em_IGRF).
+Fig. 2b. Case for use of IGRF main fields. (geomag.pdf drawn by ./plotgeomag.sh in Tohoku/em_IGRF).
 
 ![Fig3a](./images/Fig3a.png)
-Fig. 3a. Map of ocean conductivity within tetrahedral elements facing sea surface (surfcond.out) and seafloor (bottcond.out). These figures are drawn by ./plotcond.sh in sample1/em/ or sample1/em_IGRF.
+Fig. 3a. Map of ocean conductivity within tetrahedral elements facing sea surface (surfcond.out) and seafloor (bottcond.out). These figures are drawn by ./plotcond.sh in Tohoku/em/ or Tohoku/em_IGRF.
  
 ![Fig3b](./images/Fig3b.png)
-Fig. 3b. Map of ocean conductivity within tetrahedral elements facing sea surface (top row) and seafloor (bottom row). These figures are drawn by ./plotcond.sh in sample1/em_woa after simulation. Left column show the map calculated from the original 1 by 1 degree grid ocean conductivity data, woa13_decav81B0_C00an01.csv (Tyler et al., 2017) (“_wocomp” stands for “w/o complementation”). The right column shows the complemented ocean conductivity map for the TMTGEM simulation. In the left column, the empty bins are filled with a given default seawater conductivity of 3.3 S/m.
+Fig. 3b. Map of ocean conductivity within tetrahedral elements facing sea surface (top row) and seafloor (bottom row). These figures are drawn by ./plotcond.sh in Tohoku/em_woa after simulation. Left column show the map calculated from the original 1 by 1 degree grid ocean conductivity data, woa13_decav81B0_C00an01.csv (Tyler et al., 2017) (“_wocomp” stands for “w/o complementation”). The right column shows the complemented ocean conductivity map for the TMTGEM simulation. In the left column, the empty bins are filled with a given default seawater conductivity of 3.3 S/m.
 
 ![Fig4](./images/Fig4.png)
 
-Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. The black contour lines indicate the same amplitude of the horizontal particle velocity. Note that almost the same results come out in smaple1/em_IGRF and sample1/em_woa at it = 000060.
+Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. The black contour lines indicate the same amplitude of the horizontal particle velocity. Note that almost the same results come out in smaple1/em_IGRF and Tohoku/em_woa at it = 000060.
 
 ## 4.2 Sample 2: Tohoku (large mesh)<a id="Tohoku_large"></a>
 - Sample simulations in Tohoku/em/ with Tohoku/mesh_large/em3d.msh
 	This sample is very time consuming for personal PC. When users try to proceed to large computations, they can try this example first.
 
 Mesh preparation:
-	Please prepare large mesh first in sample1/mesh_large
+	Please prepare large mesh first in Tohoku/mesh_large
  
-	$ cd TMTGEMv1.1/sample1/mesh_large
+	$ cd TMTGEM/Tohoku/mesh_large
     $ ./tetmeshgen.sh                  (generate tsunami flow data)
 
 == mesh generation ================================================#
@@ -161,9 +161,9 @@ Mesh preparation:
 
 ![Fig5](./images/Fig5.png)
 
-Fig. 5 2-D mesh drawn by “gmsh polygonki. msh” and em3d.msh by “gmsh em3d.msh” in sample1/mesh_large. High mesh resolutions are achieved near NWP, B14, and CBI stations.
+Fig. 5 2-D mesh drawn by “gmsh polygonki. msh” and em3d.msh by “gmsh em3d.msh” in Tohoku/mesh_large. High mesh resolutions are achieved near NWP, B14, and CBI stations.
 
-After mesh preparation, please implement the following commands in sample1/em_large as follows:
+After mesh preparation, please implement the following commands in Tohoku/em_large as follows:
 
 	$ cd TMTGEMv1.1/Tohoku/em_large     
 	$ ./run.sh                               (run TMTGEM simulation)
@@ -186,16 +186,16 @@ Fig. 6 Vertical component of tsunami-generated magnetic field, drawn by “./bxy
 Figure 7. The upward component of IGRF magnetic field, drawn by ./plotgeomag.sh in Tohoku/em_large. Note that IGRF fields are calculated only in the area for COMCOT calculation.
 
 4.3 Sample 3: Easter Island
-TMTGEMv1.1 can deal with isolated island in open ocean.  Procedure for running sample simulation is the same as Section 4.0 and 4.1. Conduct the following three commands:
-in TMTGEMv1.1/Easter/flow/
+TMTGEM can deal with isolated island in open ocean.  Procedure for running sample simulation is the same as Section 4.0 and 4.1. Conduct the following three commands:
+in TMTGEM/Easter/flow/
 
 	$./run_comcot.sh
 
-in TMTGEMv1.1/Easter/mesh/
+in TMTGEM/Easter/mesh/
 
 	$./tetmeshgen.sh
 
-in TMTGEMv1.1/Easter/em/
+in TMTGEM/Easter/em/
 
 	$./run.sh
 
@@ -208,21 +208,21 @@ Figure 8. polygonki.msh generated by tetmeshgen.sh, drawn by $gmsh polygonki.msh
 Figure 9. Result for sea surface deformation of the comcot simulation, drawn by $./plot_z.sh 000600 in Easter/flow.
  
 ![Fig10](./images/Fig10.png)
-Figure 10. (a) Vertical component of tsunami magnetic field, drawn by “./bxyaplot.sh 000060 3”. The black contour is |vh|, and green contour means the ocean depth of 2800 m. (b) Fz from IGRF model, drawn by “./plotgeomag.sh”. (c) The vertically integrated total electric current in the ocean, drawn by “./ixyhplot_xy.sh 000060”, where the black contour is the same as (a) and arrows indicate directions of electric current. (d) Ocean surface conductivity, drawn by “./plotcond.sh”. (a) – (d) figures were made in TMTGEMv1.1/Easter/em.
+Figure 10. (a) Vertical component of tsunami magnetic field, drawn by “./bxyaplot.sh 000060 3”. The black contour is |vh|, and green contour means the ocean depth of 2800 m. (b) Fz from IGRF model, drawn by “./plotgeomag.sh”. (c) The vertically integrated total electric current in the ocean, drawn by “./ixyhplot_xy.sh 000060”, where the black contour is the same as (a) and arrows indicate directions of electric current. (d) Ocean surface conductivity, drawn by “./plotcond.sh”. (a) – (d) figures were made in TMTGEM/Easter/em.
 
 
 4.4 Sample 4: Chile
-	TMTGEMv1.1 newly became capable of dealing with topography area whose top right corner is in land. In the same manner as,
+	TMTGEM newly became capable of dealing with topography area whose top right corner is in land. In the same manner as,
 
-in TMTGEMv1.1/Chile/flow/
+in TMTGEM/Chile/flow/
 
 	$./run_comcot.sh
 
-in TMTGEMv1.1/Chile/mesh/
+in TMTGEM/Chile/mesh/
 
 	$./tetmeshgen.sh
 
-in TMTGEMv1.1/Chile/em/
+in TMTGEM/Chile/em/
 
 	$./run.sh
 
@@ -247,17 +247,17 @@ Figure 13. Same as Fig. 10 but for the simulation in Chile/em. For (a) to (d), p
 
 
 4.5 Sample 5: Mediterranean
-	Modified mesh generator in TMTGEMv1.1 can robustly work in very complicated bathymetry area as Mediterranean, where many islands and peninsulas are cut by calculation boundaries.
+	Modified mesh generator in TMTGEM can robustly work in very complicated bathymetry area as Mediterranean, where many islands and peninsulas are cut by calculation boundaries.
 
-in TMTGEMv1.1/Mediterranean/flow/
+in TMTGEM/Mediterranean/flow/
 
 	$./run_comcot.sh
 
-in TMTGEMv1.1/ Mediterranean /mesh/
+in TMTGEM/ Mediterranean /mesh/
 
 	$./tetmeshgen.sh
 
-in TMTGEMv1.1/ Mediterranean /em/
+in TMTGEM/ Mediterranean /em/
 
 	$./run.sh
 
@@ -290,7 +290,7 @@ and surface conductivity drawn by in Mediterranean/em
 
 ## 5. Details of the code <a id="Details_of_code"></a>
 ## 5.1 Mesh generation part
-The most important and difficult part in TMTGEM is to generate appropriate tetrahedral mesh for tsunami EM simulations. A rough mesh generation flow is as follows, all of which is in tetmeshgen.sh in each mesh generation folder, e.g. sample1/mesh:
+The most important and difficult part in TMTGEM is to generate appropriate tetrahedral mesh for tsunami EM simulations. A rough mesh generation flow is as follows, all of which is in tetmeshgen.sh in each mesh generation folder, e.g. Tohoku/mesh:
 
 Generate 2-D triangle mesh
 Read bathymetry data and reflect it in triangular mesh
@@ -314,7 +314,7 @@ View of output meshes (use gmsh to view each mesh file)
 
 Fig. 17 Example outputs of tetmeshgen.sh.
 
-All the control parameters for mesh generation are included in a control file, for example sample1/mesh/mesh.ctl. See below for the meaning of each parameters in mesh.ctl.
+All the control parameters for mesh generation are included in a control file, for example Tohoku/mesh/mesh.ctl. See below for the meaning of each parameters in mesh.ctl.
 ### < mesh.ctl >
     # of header        |3
     ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
@@ -378,9 +378,9 @@ Note: Use of background mesh “bgmesh3d.pos” is not available for now.
 
 
 ## 5.2 Time-domain simulation part
-	Control parameter is for simulation part, e.g. sample1/em_large/tohoku.ctl, is as follows:
+	Control parameter is for simulation part, e.g. Tohoku/em_large/tohoku.ctl, is as follows:
 
-< TMTGEM/sample1/em_large/tohoku.ctl >
+< TMTGEM/Tohoku/em_large/tohoku.ctl >
 
 	--------10--------20--------------------
 	1:err,2:fwd,3:both |2  1: div error calculation, 2: normal forward
