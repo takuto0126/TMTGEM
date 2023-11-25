@@ -2,6 +2,10 @@
 z*.dat
 m*.dat
 n*.dat
+layer*.dat
+time.dat
+ini_surface.dat
+deform_*.dat
 *.TXT
 *.ps
 *.pdf
