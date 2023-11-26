@@ -1,14 +1,12 @@
 # run script for Macbook Pro 15 inch
 #!/bin/sh
-source /opt/intel/bin/compilervars.sh intel64
-source /opt/intel/bin/debuggervars.sh intel64
 
-OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=8
 
 
 src=../../tmtgem/solver
 cd $src
-#make clean
+make clean
 make
 cd -
 

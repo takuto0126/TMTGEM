@@ -1,4 +1,4 @@
-cd --------10--------20--------------------
+--------10--------20--------------------
 1:err,2:fwd,3:both |2
 3d em mesh file    |../mesh/em3d.msh
 line infro file    |../mesh/lineinfo.dat

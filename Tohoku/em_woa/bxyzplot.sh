@@ -75,7 +75,6 @@ close(1)
 end program tmp
 EOF
 ########################    tmp.f end  #####################
-########################    tmp.f end  #####################
 FC=ifort
 $FC tmp.f90
 ./a.out ## make "tmp.yzc"
@@ -116,5 +115,4 @@ gmt end show
 rm $CPT a.out tmp.f90 vh.dat vh.grd gmt.history tmp.dat
 rm $grdtopo
 rm $grdf
-
 

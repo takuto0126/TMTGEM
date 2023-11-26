@@ -8,15 +8,12 @@ title[1]="Surf"
 title[2]="Bott"
 title[3]="Surf w/o complement"
 title[4]="Bott w/o complement"
-out=oceancond.ps
-outpdf=oceancond.pdf
-
+xx[1]=3 ; yy[1]=12
+xx[2]=12 ; yy[2]=0
+xx[3]=-12 ; yy[3]=-10
+xx[4]=12 ; yy[4]=0
 width=600
 WESN=-${width}/${width}/-${width}/${width}
-
-bb=a100/a100:"distance\(km\)":WeSn
-scl=15/15 ; range=0/15/0/15
-scl2=17/15 ; range2=0/20/0/15
 
 polygonfile="../mesh/polygon2.dat"
 polygongmt="polygon2.gmt"
@@ -54,39 +51,36 @@ close(2)
 
 end program tmp
 EOF
-gfortran tmp.f90
+ifort tmp.f90
 ./a.out ## make "tmp.yzc"
 ########################    tmp.f end  #####################
 
 grdf="cond.grd"
-CPT="cond.cpt"
 grdtopo="topo.grd"
 
-surface $topofile -G$grdtopo -I2/2 -T1 -R$WESN
+gmt begin ocencond pdf
+
+gmt surface $topofile -G$grdtopo -I2/2 -T1 -R$WESN
 
 # surfcond
-makecpt -Cjet -T2.8/5.0/0.01 -V > ${CPT}
-
-if [ -e $out ]; then
-rm $out
-fi
+gmt makecpt -Cjet -T2.8/5.0/0.01
 
 for i in 1 2 3 4
 do
-cat ${inp[$i]} | awk '{print($1,$2,$3)}' | surface -G$grdf -I4/4 -T1 -R$WESN
-grdimage $grdf -B$bb -C${CPT} -JX${scl} -R${WESN} -V -K -X3 -Y3 >> $out
-psxy "$polygongmt" -JX$scl -R$WESN  -m -K -O -V -W1,black -Gwhite >> $out
-grdcontour $grdtopo -C1000 -L-8000/-1000 -W0.2,black -JX -K -O -V >> $out
-psxy "$pos5file" -JX$scl -R$WESN -K -L -O -V -W0.5,black >> $out
-pstext -JX$scl2 -R$range2  -W0 -G255 -K -O -V <<EOF >> $out
-16.9   14.5 16 0 4 RM ${title[$i]} cond [S/m]
+awk '{print($1,$2,$3)}' ${inp[$i]} | gmt surface -G$grdf -I4/4 -T1 -R$WESN  
+gmt basemap -JX8/8 -R$WESN -Bxa200 -Bya200 -BWeSns  -X${xx[$i]} -Y${yy[$i]} 
+gmt grdimage $grdf -C  
+gmt plot "$polygongmt" -W1 -Gwhite 
+gmt grdcontour $grdtopo -C1000 -L-8000/-1000 -W0.2   
+gmt plot "$pos5file" -L -W0.5
+gmt text -JX10/10 -R0/10/0/10  -F+f12p,Helvetica+jBR -G255  <<EOF 
+8   8.2  ${title[$i]} cond [S/m]
 EOF
-psscale -D15.5/6/10/0.3 -B0.1 -C$CPT -O -V >> $out
+gmt colorbar -Dx8.5/0+w8/0.3 -B0.5 -C
 done
 
+gmt end show
 
-#grdimage $grdf_y -B$bb -C${CPT} -JX${scl} -R${WESN} -V  -X3 -Y3 > $out
-rm tmp.f90 polygon2.gmt gmt.history $CPT $grdtopo $grdf a.out
-ps2pdf $out $outpdf
-open $outpdf &
+#grdimage $grdf_y -B$bb -C${CPT} -JX${scl} -R${WESN}  -X3 -Y3 > $out
+rm tmp.f90 polygon2.gmt gmt.history $grdtopo $grdf a.out
 
