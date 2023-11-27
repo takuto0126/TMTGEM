@@ -1,1 +1,4 @@
-*.o *.mod *.exe sync*.sh
+*.o
+*.mod
+*.exe
+sync*.sh
