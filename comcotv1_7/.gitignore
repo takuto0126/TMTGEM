@@ -1,1 +1,4 @@
-*.m *.mod *.o comcot
+*.m
+*.mod
+*.o
+*.exe
