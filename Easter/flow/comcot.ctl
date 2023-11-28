@@ -76,7 +76,7 @@
  X_end                                          :  -105.0
  Y_Start                                        :  -32.0
  Y_end                                          :  -22.0
- File Name of Bathymetry Data                   :../topo/W-129E-89S-47N-7_1min.xyz
+ File Name of Bathymetry Data                   :../topo/W-121E-97S-38N-16_1min.xyz
  Data Format Option (0-OLD;1-MOST;2-XYZ;3-ETOPO):     2
  Grid Identification Number                     :    01
  Grid Level                                     :     1
