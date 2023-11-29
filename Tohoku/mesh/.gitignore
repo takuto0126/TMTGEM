@@ -8,3 +8,6 @@ topo.xyz
 *.gmt 
 gmt.history 
 a.out
+*.sh
+!clean.sh
+!tetmeshgen.sh
