@@ -60,6 +60,7 @@ integer(4)                               :: neast,node,nclose,lpoly0
 integer(4)                               :: i,j,ii,jj,lpoly2
 logical                                  :: iflag_topright_land  ! 2020.05.29
 integer(4)                               :: is,ie,istart_polygon ! 2019.02.21
+real(8),    allocatable                  :: xpoly_work(:,:),ypoly_work(:,:) !2022.03.01
 
 !#[0]## set input
  node   = g_grd%node
@@ -189,15 +190,17 @@ integer(4)                               :: is,ie,istart_polygon ! 2019.02.21
  write(*,*) "addcorner [5] lpoly0",lpoly0,"nclose",nclose
  if ( lpoly0 - nclose + 1 .ge. 2 ) then ! here is skipped when lpoly0 = nclose = 0, 2019.03.06
   write(*,*) "lpoly0",lpoly0,"nclose",nclose,"lpmax",lpmax,"ncmax",ncmax
-  write(*,*) "size(xpoly(:,1))",size(xpoly(:,1))
-!  do i=1,lpoly0-nclose
-  xpoly(1+1: 1+ lpoly0 - nclose,:) = xpoly(nclose+1:lpoly0,:) ! 20200805
-  ypoly(1+1: 1+ lpoly0 - nclose,:) = ypoly(nclose+1:lpoly0,:) ! 20200805
-  lpoly(1+1: 1+ lpoly0 - nclose  ) = lpoly(nclose+1:lpoly0  ) ! 20200805
+  write(*,*) "size(xpoly(:,1))",size(xpoly(:,1)) ! xpoly(lpmax,ncmax)
+  xpoly_work = xpoly ! 2022.03.02
+  ypoly_work = ypoly ! 2022.03.02
+  do i=1,lpoly0-nclose
+  xpoly(1+i: 1+ lpoly0 - nclose,:) = xpoly_work(nclose+i:lpoly0,:) ! 20200805
+  ypoly(1+i: 1+ lpoly0 - nclose,:) = ypoly_work(nclose+i:lpoly0,:) ! 20200805
+!  lpoly(1+i: 1+ lpoly0 - nclose  ) = lpoly(nclose+i:lpoly0  ) ! 20200805
 !   xpoly(1+i,:)=xpoly(nclose+i,:) ! 2021.05.24
 !   ypoly(1+i,:)=ypoly(nclose+i,:) ! 2021.05.24
-!   lpoly(1+i  )=lpoly(nclose+i  ) ! 2021.05.24
-!  end do
+    lpoly(1+i  )=lpoly(nclose+i  ) ! 2021.05.24
+  end do
   if ( lpoly0 - nclose +2 .le. h_poly%lpmax ) then ! set zero for nul space
    xpoly(lpoly0-nclose+2:h_poly%lpmax,:) = 0.d0
    ypoly(lpoly0-nclose+2:h_poly%lpmax,:) = 0.d0
