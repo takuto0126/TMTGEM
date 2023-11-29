@@ -76,7 +76,7 @@
  X_end                                          :   25.0
  Y_Start                                        :   30.0
  Y_end                                          :   41.8
- File Name of Bathymetry Data                   : ../topo/W-15E35S20N55_1min.xyz
+ File Name of Bathymetry Data                   : ../topo/W7E28S29N44_1min.xyz
  Data Format Option (0-OLD;1-MOST;2-XYZ;3-ETOPO):     2
  Grid Identification Number                     :    01
  Grid Level                                     :     1

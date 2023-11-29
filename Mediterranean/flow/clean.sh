@@ -1,2 +1,1 @@
-#!/bin/bash
-rm *.dat *.ps *.TXT
+../../tmtgem/src_post/cleanflow.sh
