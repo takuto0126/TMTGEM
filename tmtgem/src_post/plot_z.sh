@@ -3,8 +3,6 @@
 #do
 inputfile="./z_01_"${1}".dat"
 #inputfile="./Z_LLW/z_01_00"${i}".dat"
-out21="./z_01_"${1}".ps"
-#out21="./Z/z_01_00"${i}".ps"
 nx=`wc layer01_x.dat | awk -F" "  '{printf($1)}' `
 ny=`wc layer01_y.dat | awk -F" "  '{printf($1)}' `
 echo $inputfile
@@ -61,32 +59,28 @@ WESN=$w/$e/$s/$n
 echo $WESN
 
 grdf="eta.grd"
-scl=1.4
 
-gmt begin z_01_${i} pdf
+gmt begin z_01_${1} pdf
 
 gmt makecpt -Cpolar -T-2/2/0.05
 #xyz2grd Bathymetry.xyz -GBathymetry.grd -R0/5.488/0/3.402 -I0.014
 gmt blockmean "tmp.dat" -I0.02 -R$WESN | gmt surface -G$grdf -I0.02 -T0.5 -R$WESN
 #surface $etafile -G$grdeta -I2/2 -T1 -R$WESN
 #surface $topofile -G$topogrd -I2/2 -T1 -R$WESN
-gmt basemap -Bxa5+l"Longitude" -Bya5+l"Latitude" -BWeSn -R${WESN} -Jm${scl}
+gmt basemap -Bxa5+l"Longitude" -Bya5+l"Latitude" -BWeSn -R${WESN} -JM13
 gmt grdimage $grdf  -C 
 #grdcontour $topogrd -C1000  -L-7100/-6900 -W0.1/0/255/0  -JX 
 #psxy "$polygongmt" -JX$scl -R$WESN  -B$ant -m -W2/0/0/0 
 #psxy "$pos5file" -JX$scl -R$WESN -m -L -W2/255/0/0 
 #psxy "obs.dat" -JX$scl -R$WESN  -G255 -P -Ss0.5c  -W8/0/0/0 
-#grdcontour $grdeta -C1 -A1tf6  -L0.1/5 -W0.1/0 -JX 
-#grdcontour $grdeta -C0.5 -A0.5tf6  -L0.1/0.8 -W0.1/0 -JX 
-#grdcontour $grdeta -C1 -A1tf6  -L-5/-0.1 -Wa0.1/0/t7_7:0 -JX 
 gmt coast -Dh -W0.1 -Ggreen 
-gmt colorbar -Dx9.5/4+w8/0.3 -B0.5  -C 
+gmt colorbar -Dx13.5/0+w8/0.3 -B0.5  -C 
 gmt plot -G255/0/255 << EOF 
 159.9518        41.1026
 144.807595      39.0582
 EOF
-gmt text -JX17/19 -R0/17/0/19  -G255 <<EOF 
-7 10.5 16 Time = $minute [min]
+gmt text -JX17/19 -R0/17/0/19  -F+f16p,Helvetica+jRM -G255 <<EOF 
+13 13.5 Time = $minute [min]
 EOF
 
 gmt end show
