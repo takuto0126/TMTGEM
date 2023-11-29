@@ -6,12 +6,7 @@ pos5file="pos5.dat"
 topofile="topo.xyz"
 out21=polygon${1}.ps
 echo $infile
-rw=-1300
-re=1300
-rs=-1300
-rn=1300
 scale=15/15
-bb=a100:"distance\(km\)":/a100:"distance\(km\)":WeSn
 #######################  tmp2.f start  ###############
 cat <<EOF > tmp.f90
     program tmp
@@ -43,27 +38,31 @@ if (iclose .eq. 1)  write(2,*) cy1,cx1
 end program tmp
 EOF
 ########################    tmp.f end  #####################
-gfortran tmp.f90
+source /opt/intel/oneapi/setvars.sh
+FC=ifort
+$FC tmp.f90
 ./a.out ## make "tmp.yzc"
 #############################################
 export PATH=$PATH:/usr/lib/gmt/bin
 export GMTHOME=/usr/lib/gmt
+rw=-1000
+re=1000
+rs=-1000
+rn=1000
 WESN=$rw/$re/$rs/$rn
 scl=$scale
 grdtopo="topo.grd"
-#CPT="mesh.cpt"
-#makecpt -Cpanoply -T-2.22/-0.2/0.0005 -V > ${CPT}
+
 ## note that -L option enclose the polygon automatically in psxy
-surface $topofile -G$grdtopo -I2/2 -T1 -R$WESN
-psxy "$intermf" -JX$scl -R$WESN  -B"$bb" -K -V -W1,black -X3 -Y4 > $out21
-psxy "$pos5file" -JX$scl -R$WESN -O -V -L -W1,black >> $out21 # -L forces "closed"
-#grdcontour $grdtopo -C1000 -A1000t -L-7500/-6500 -W0.2 -JX -O -V >> $out21
-#pstext "elenum.dat"  -Jx$scl -R$WESN -K -O -V  >> $out21
-#pstext  -JX$scl -R$WESN -O -V -W3 <<EOF >> $out21
+gmt begin polygon${1} pdf
+gmt blockmean $topofile -R$WESN -I2 | gmt surface -G$grdtopo -I2 -T1 -R$WESN
+gmt basemap -JX$scl -R$WESN  -Bxa100+l"distance\(km\)" -Bya100+l"distance\(km\)" -BWeSn
+gmt plot $intermf  -W1 
+gmt plot "$pos5file" -L -W1  # -L forces "closed"
+#grdcontour $grdtopo -C1000 -A1000t -L-7500/-6500 -W0.2 -JX -O -V 
+#pstext "elenum.dat"  -Jx$scl -R$WESN -K -O -V  
+#pstext  -JX$scl -R$WESN -O -V -W3 <<EOF 
 #2000 0 16 0 4 CM mesh
 #EOF
+gmt end show
 rm tmp.f90
-#rm $intermf $grdtopo
-#rm mesh.cpt
-#rm tmp.yzc
-gv $out21 &
