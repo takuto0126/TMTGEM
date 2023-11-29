@@ -3,11 +3,13 @@
 *.geo
 *.msh 
 mshki2ocean.ctl 
-topo.xyz 
+topo.xyz
+topo.grd 
 *.ps 
 *.gmt 
 gmt.history 
 a.out
 *.sh
+*.pdf
 !clean.sh
 !tetmeshgen.sh

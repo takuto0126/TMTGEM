@@ -1,11 +1,4 @@
-# ts_location.dat should be excluded
-z*.dat
-m*.dat
-n*.dat
-layer*.dat
-time.dat
-ini_surface.dat
-deform_*.dat
-*.TXT
+*.dat
 *.ps
+*.TXT
 *.pdf
