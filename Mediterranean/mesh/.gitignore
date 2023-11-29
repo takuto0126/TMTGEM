@@ -1,1 +1,15 @@
-*.dat *.pos *.geo *.msh mshki2ocean.ctl topo.xyz *.ps *.pdf *.gmt gmt.history *.grd a.out *.gmt *.cpt
+*.dat
+*.pos
+*.geo
+*.msh 
+mshki2ocean.ctl 
+topo.xyz
+topo.grd 
+*.ps 
+*.gmt 
+gmt.history 
+a.out
+*.sh
+*.pdf
+!clean.sh
+!tetmeshgen.sh
