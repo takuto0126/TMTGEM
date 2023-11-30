@@ -8,7 +8,7 @@
 # General Parameters for Simulation             : Value Field                  |
 #===============================================:===============================
 #Job Description: NZ30sec bathymetry, Spherical Coordinates for code testing
- Total run time (Wall clock, seconds)           :  600.000
+ Total run time (Wall clock, seconds)           :  300.000
  Time interval to Save Data    ( unit: sec )    :    5.0
  Output Zmax & TS (0-Max Z;1-Timeseries;2-Both) :     0
  Start Type (0-Cold start; 1-Hot start)         :     0
@@ -72,11 +72,11 @@
  Bottom Friction Switch? (0:Yes,1:No,2:var. n ) :     1
  Manning's Roughness Coef. (For fric.option=0)  :     0.013
  Layer Ouput Option? (0:Z+Hu+Hv;1:Z Only;2:NONE):     0
- X_start                                        :  -82.0
- X_end                                          :  -70.0
+ X_start                                        :  -78.0
+ X_end                                          :  -72.0
  Y_Start                                        :  -50.0
- Y_end                                          :  -35.0
- File Name of Bathymetry Data                   : ../topo/W-115E-60S-70N-5_1min.xyz
+ Y_end                                          :  -44.0
+ File Name of Bathymetry Data                   : ../topo/W-81E-69S-53N-41_1min.xyz
  Data Format Option (0-OLD;1-MOST;2-XYZ;3-ETOPO):     2
  Grid Identification Number                     :    01
  Grid Level                                     :     1

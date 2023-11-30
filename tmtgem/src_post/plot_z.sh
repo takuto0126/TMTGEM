@@ -79,12 +79,12 @@ gmt plot -G255/0/255 << EOF
 159.9518        41.1026
 144.807595      39.0582
 EOF
-gmt text -JX17/19 -R0/17/0/19  -F+f16p,Helvetica+jRM -G255 <<EOF 
-13 13.5 Time = $minute [min]
+gmt text -JX17/19 -R0/17/0/19  -F+f16p,Helvetica+jRB -G255 <<EOF 
+13 0.2 Time = $minute [min]
 EOF
 
 gmt end show
 
-rm tmp.f90 gmt.history
+rm tmp.f90 
 rm tmp.dat $grdf
 rm a.out  
