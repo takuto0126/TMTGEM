@@ -4,13 +4,14 @@
 infile=topo.xyz
 out21=topo.ps
 grdf=topo.grd
-WESN=-2000/2000/-3000/3000
-CPT=topo.cpt
+WESN=-600/600/-600/600
 
+gmt begin topo pdf
 gmt xyz2grd $infile -G$grdf -R$WESN -I2
-gmt makecpt -Cpolar -T-7000/7000/1 > ${CPT}
+gmt makecpt -Cpolar -T-7000/7000/1
 
-gmt grdimage $grdf -Ba1000/a1000WeSn -C${CPT} -JX20/20 -R${WESN} -X3 -Y1 > $out21
+gmt basemap -JX20/20 -R${WESN} -Bxa100 -Bya100 -BWeSn
+gmt grdimage $grdf  -C
+gmt grdcontour $grdf -C100 -A100 -L-50/50 -W1
 
-gv $out21 &
-#open $out21
+gmt end show
