@@ -1,0 +1,1 @@
+../../tmtgem/src_post/clean.sh

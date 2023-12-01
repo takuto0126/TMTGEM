@@ -1,0 +1,15 @@
+#### For testing TMTGEM
+### The following test was done before mering Pull Request
+
+- Tohoku/flow
+$./run_comcot.sh
+$./plot_z.sh 000300
+
+- Tohoku/mesh
+$./tetmeshgen.sh
+
+- Tohoku/em
+$run.sh
+$./bxyzplot.sh 000060 3
+$./plotcond.sh
+$./plotgeomag.sh

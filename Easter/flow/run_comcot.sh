@@ -1,0 +1,1 @@
+../../tmtgem/src_post/run_comcot.sh

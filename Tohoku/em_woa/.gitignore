@@ -1,0 +1,9 @@
+*.cpt
+*.pdf
+*.ps
+*.dat
+*.grd
+.gmt*
+bxyz/*
+exyz/*
+vxyz/*
