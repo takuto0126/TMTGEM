@@ -26,10 +26,9 @@ tminami@port.kobe-u.ac.jp
 4. [Run sample simulations](#Run_sample_simulations)  
 4.1. [Preparation for running sample simulation in Tohoku/em/](#Preparation)
  - Sample 1: [Tohoku (small mesh)](#Tohoku_small)
- - Sample 2: [Tohoku (large mesh)](#Tohoku_large)
- - Sample 3: [Easter Island](#Easter)
- - Sample 4: [Chile](#Chile)
- - Sample 5: [Mediterranean](#Mediterranean)
+ - Sample 2: [Easter Island](#Easter)
+ - Sample 3: [Chile](#Chile)
+ - Sample 4: [Mediterranean](#Mediterranean)
 
 5. [Details of the code](#Details_of_code)  
 5.1. [Mesh generation part](#Meshgeneration)  
@@ -100,7 +99,7 @@ When the preparation is successful, users can see the following figures.
 ![Fig1](./images/Fig1.png)
 Fig. 1. (a) Tsunami height drawn by “./plot_z.sh 000600” in Tohoku/flow/. (b) 2-D mesh of polygonki.msh drawn by “gmsh polygonki.msh” in Tohoku/mesh/. (c) Final 3-D mesh drawn by “gmsh em3d.msh” in Tohoku/mesh/.
 
-## 4.1 Sample 1: Tohoku (small mesh)<a id="Tohoku_small"></a>
+## 4.1 Sample 1: Tohoku <a id="Tohoku_small"></a>
 Sample simulations in Tohoku/em/ with Tohoku/mesh/em3d.msh
 There are currently three types of example simulations using a relatively small Tohoku mesh, “Tohoku/mesh/em3d.msh”.
 
@@ -141,51 +140,15 @@ Fig. 3b. Map of ocean conductivity within tetrahedral elements facing sea surfac
 
 Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. The black contour lines indicate the same amplitude of the horizontal particle velocity. Note that almost the same results come out in smaple1/em_IGRF and Tohoku/em_woa at it = 000060.
 
-## 4.2 Sample 2: Tohoku (large mesh)<a id="Tohoku_large"></a>
-- Sample simulations in Tohoku/em/ with Tohoku/mesh_large/em3d.msh
-	This sample is very time consuming for personal PC. When users try to proceed to large computations, they can try this example first.
-
-Mesh preparation:
-	Please prepare large mesh first in Tohoku/mesh_large
- 
-	$ cd TMTGEM/Tohoku/mesh_large
-    $ ./tetmeshgen.sh                  (generate tsunami flow data)
-
-== mesh generation ================================================#
-=   It took 15 min by Macbook Pro with 2.8 GHz intel Core i7 with 16 GB RAM        #
-===================================================================#
-
-	$ gmsh polygonki.msh             (check 2-D mesh, see Fig. 5)
-	$ gmsh em3d.msh                  (check 3-D mesh)
-
-
-![Fig5](./images/Fig5.png)
-
-Fig. 5 2-D mesh drawn by “gmsh polygonki. msh” and em3d.msh by “gmsh em3d.msh” in Tohoku/mesh_large. High mesh resolutions are achieved near NWP, B14, and CBI stations.
-
-After mesh preparation, please implement the following commands in Tohoku/em_large as follows:
-
-	$ cd TMTGEMv1.1/Tohoku/em_large     
-	$ ./run.sh                               (run TMTGEM simulation)
-
-====   simulation running =====================#
-= Strongly recommend not to use personal PCs but numerical servers with RAM > 16 GB   # 
-===============================================#
-
-	$ ./plotgeomag.sh             (check the used ambient magnetic field)	
-	$ ./plotcond.sh               (check the used ocean conductivity)	
-	$ ./bxyzplot.sh 000060 3      (check 3rd magnetic comp. (Bz) for it = 60; Fig. 6 )
-
-
 ![Fig6](./images/Fig6.png)
 
-Fig. 6 Vertical component of tsunami-generated magnetic field, drawn by “./bxyaplot.sh 000060 3” (left) and the surface conductivity drawn by ./plotcond.sh in Tohoku/em_large.
+Fig. 6 Vertical component of tsunami-generated magnetic field, drawn by “./bxyzplot.sh 000060 3” (left) and the surface conductivity drawn by ./plotcond.sh in Tohoku/em_large.
  
 ![Fig7](./images/Fig7.png)
 
 Figure 7. The upward component of IGRF magnetic field, drawn by ./plotgeomag.sh in Tohoku/em_large. Note that IGRF fields are calculated only in the area for COMCOT calculation.
 
-4.3 Sample 3: Easter Island
+## 4.2 Sample 2: Easter Island
 TMTGEM can deal with isolated island in open ocean.  Procedure for running sample simulation is the same as Section 4.0 and 4.1. Conduct the following three commands:
 in TMTGEM/Easter/flow/
 
@@ -211,8 +174,8 @@ Figure 9. Result for sea surface deformation of the comcot simulation, drawn by 
 Figure 10. (a) Vertical component of tsunami magnetic field, drawn by “./bxyaplot.sh 000060 3”. The black contour is |vh|, and green contour means the ocean depth of 2800 m. (b) Fz from IGRF model, drawn by “./plotgeomag.sh”. (c) The vertically integrated total electric current in the ocean, drawn by “./ixyhplot_xy.sh 000060”, where the black contour is the same as (a) and arrows indicate directions of electric current. (d) Ocean surface conductivity, drawn by “./plotcond.sh”. (a) – (d) figures were made in TMTGEM/Easter/em.
 
 
-4.4 Sample 4: Chile
-	TMTGEM newly became capable of dealing with topography area whose top right corner is in land. In the same manner as,
+## 4.3 Sample 3: Chile
+TMTGEM newly became capable of dealing with topography area whose top right corner is in land. In the same manner as the previous samples, one can obtain the results in the following procedure:
 
 in TMTGEM/Chile/flow/
 
@@ -244,9 +207,7 @@ Figure 11. polygonki.msh and em3d.msh generated by tetmeshgen.sh, drawn by “$g
 Figure 13. Same as Fig. 10 but for the simulation in Chile/em. For (a) to (d), please conduct “./bxyzplot.sh 000060 3”, “./plotgeomag.sh”, “./ixyhplot_xy.sh 000060”, and “plotcond.sh”, respectively, after “./run.sh” finishes.
 
 
-
-
-4.5 Sample 5: Mediterranean
+## 4.4 Sample 4: Mediterranean
 	Modified mesh generator in TMTGEM can robustly work in very complicated bathymetry area as Mediterranean, where many islands and peninsulas are cut by calculation boundaries.
 
 in TMTGEM/Mediterranean/flow/
@@ -460,6 +421,7 @@ Some options may not work. Please check source programs when behaviors are weird
 	$ih_x$ (A/km), $ih_y$ (A/km)
 
 	The number of lines in the file is nx * ny based on , nx and ny, similar to bxyz/bxyz_xy2D******.dat. ih_x and ih_y are the eastward and northward components of i_H h, respectively.
+
 
 
 # 6. Release notes <a id="Release_notes"></a>
