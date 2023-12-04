@@ -24,8 +24,7 @@ tminami@port.kobe-u.ac.jp
 2. [Important notes](#ImportantNotes)
 3. [Required environments](#Required_environments)
 4. [Run sample simulations](#Run_sample_simulations)  
-4.1. [Preparation for running sample simulation in Tohoku/em/](#Preparation)
- - Sample 1: [Tohoku (small mesh)](#Tohoku_small)
+ - Sample 1: [Tohoku](#Tohoku_small)
  - Sample 2: [Easter Island](#Easter)
  - Sample 3: [Chile](#Chile)
  - Sample 4: [Mediterranean](#Mediterranean)
@@ -73,25 +72,30 @@ Table 1. Overview of sample simulations and required time
 
 TMTGEM/
 
-|Command	| Tohoku/    |Tohoku/  | Tohoku/ |Tohoku/ | Easter/ | Chile/ | Mediterranean/ | 
-|:----------:|:-----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|run_comcot.sh <br> time |flow/ <br> 4m30s| - | - | - | flow/ <br> 5m30s| flow/ <br> 8m46s  | flow/ <br> 8m7s|
-|tetmeshgen.sh <br> time | mesh/ <br> 2m15s  | - | - | mesh_large/ <br> 15m14s | mesh/ <br> 1m43s | mesh/ <br> 5m10s | mesh/ <br> 3m21s |
-|run.sh <br>  time	     | em/ <br> 7m52s |	em_IGRF/ <br> 8m38s	| em_woa/ <br> 8m32s	| em_large/ <br> 2.6 hour | em/ <br> 7m50s	| em/ <br> 7m57s| em/ <br> 15m14s |
+|Command	| Tohoku/    |Tohoku/  | Tohoku/ | Easter/ | Chile/ | Mediterranean/ | 
+|:----------:|:-----:|:----:|:----:|:----:|:----:|:----:|
+|run_comcot.sh <br> time |flow/ <br> 4m30s| - | - | flow/ <br> 5m30s| flow/ <br> 8m46s  | flow/ <br> 8m7s|
+|tetmeshgen.sh <br> time | mesh/ <br> 2m15s  | - | -  | mesh/ <br> 1m43s | mesh/ <br> 5m10s | mesh/ <br> 3m21s |
+|run.sh <br>  time	     | em/ <br> 7m52s |	em_IGRF/ <br> 8m38s	| em_woa/ <br> 8m32s	| em/ <br> 7m50s	| em/ <br> 7m57s| em/ <br> 15m14s |
 
 (“time” is computation time, which was measured by Macbook Pro with 2.8 GHz intel Core i7 with 16 GB RAM, and ./run.sh was performed by 4-thread OpenMP parallel computation. “NX*NY” is the grid configuration for comcot calculation. ”# of lines” indicates the number of lines in a unit of million (M) for the generated 3-D mesh, em3d.msh. )
 
-## 4.0 Preparation for running sample simulation in Tohoku/em/ <a id="Preparation"></a>
+## 4.1 Sample 1: Tohoku <a id="Tohoku_small"></a>
+
+### 4.1.1 Preparation for running sample simulation in Tohoku/em/ <a id="Preparation"></a>
 As preparation, tsunami flow data and simulation mesh are necessary for tsunami electromagnetic simulations. Implement the following commands in terminal for preparation:
 
-### run comcot 
+#### preparation of *.xyz topo file for tsunami simulation and TMTGEM mesh generation
+	$ cd TMTGEM/Tohoku/topo
+	$ ./mktopo.sh                       (Here W130E155S33N45_1min.xyz is generated)
+#### run comcot 
 	$ cd TMTGEM/Tohoku/flow
-    $ ./run_comcot.sh                         (generate tsunami flow data)
-### mesh generattion for TMTGEM
-	$ ./plot_z.sh 000600                      (check tsunami height, see Fig. 1a)
+    $ ./run_comcot.sh                   (generate tsunami flow data)
+#### mesh generattion for TMTGEM
+	$ ./plot_z.sh 000600                (check tsunami height, see Fig. 1a)
 	$ cd TMTGEM/Tohoku/mesh
-	$ ./tetmeshgen.sh                         (mesh generation)
-### check generated mesh
+	$ ./tetmeshgen.sh                   (mesh generation)
+#### check generated mesh
 	$ gmsh polygonki.msh                      (check generated 2d mesh, see Fig. 1b)
 	$ gmsh em3d.msh                           (check generated 3d mesh, see Fig. 1c)
 
@@ -99,9 +103,8 @@ When the preparation is successful, users can see the following figures.
 ![Fig1](./images/Fig1.png)
 Fig. 1. (a) Tsunami height drawn by “./plot_z.sh 000600” in Tohoku/flow/. (b) 2-D mesh of polygonki.msh drawn by “gmsh polygonki.msh” in Tohoku/mesh/. (c) Final 3-D mesh drawn by “gmsh em3d.msh” in Tohoku/mesh/.
 
-## 4.1 Sample 1: Tohoku <a id="Tohoku_small"></a>
-Sample simulations in Tohoku/em/ with Tohoku/mesh/em3d.msh
-There are currently three types of example simulations using a relatively small Tohoku mesh, “Tohoku/mesh/em3d.msh”.
+### 4.1.2 Run TMTGEM for Tohoku sample
+There are three types of example simulations using a relatively small Tohoku mesh, “Tohoku/mesh/em3d.msh”.
 
 ##### Tohoku/em/
  use of homogeneous background magnetic field and given ocean conductivity
@@ -110,9 +113,9 @@ There are currently three types of example simulations using a relatively small 
 ##### Tohoku/em_woa/
  use of homogeneous background magnetic field and heterogeneous ocean conductivity
 
-All the above three samples generate almost the same results for the given short time evolution period of t = 5 min. Please confirm that TMTGEM runs well with several types of control files, e.g. Tohoku/em/tohoku.ctl. In each file, please implement the following commands:
+All the above three samples generate almost the same results for the given short time evolution period of t = 5 min. Please confirm that TMTGEM runs well with several types of control files, e.g. Tohoku/em/tmtgem.ctl. In each file, please implement the following commands:
 
-	$ cd TMTGEM/Tohoku/em         (case for Tohoku/em)
+	$ cd TMTGEM/Tohoku/em             (case for Tohoku/em)
 	$ ./run.sh                        (run TMTGEM simulation)
 ### simulation running
 	$ ./plotgeomag.sh                 (check the used ambient magnetic field; Fig. 2)
@@ -140,13 +143,13 @@ Fig. 3b. Map of ocean conductivity within tetrahedral elements facing sea surfac
 
 Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. The black contour lines indicate the same amplitude of the horizontal particle velocity. Note that almost the same results come out in smaple1/em_IGRF and Tohoku/em_woa at it = 000060.
 
-![Fig6](./images/Fig6.png)
+[](![Fig6](./images/Fig6.png))
 
-Fig. 6 Vertical component of tsunami-generated magnetic field, drawn by “./bxyzplot.sh 000060 3” (left) and the surface conductivity drawn by ./plotcond.sh in Tohoku/em_large.
- 
-![Fig7](./images/Fig7.png)
+<!--(Fig. 6 Vertical component of tsunami-generated magnetic field, drawn by “./bxyzplot.sh 000060 3” (left) and the surface conductivity drawn by ./plotcond.sh in Tohoku/em_large.) -->
 
-Figure 7. The upward component of IGRF magnetic field, drawn by ./plotgeomag.sh in Tohoku/em_large. Note that IGRF fields are calculated only in the area for COMCOT calculation.
+[]( ![Fig7](./images/Fig7.png) ) 
+
+<!--(Figure 7. The upward component of IGRF magnetic field, drawn by ./plotgeomag.sh in Tohoku/em_large. Note that IGRF fields are calculated only in the area for COMCOT calculation.)-->
 
 ## 4.2 Sample 2: Easter Island
 TMTGEM can deal with isolated island in open ocean.  Procedure for running sample simulation is the same as Section 4.0 and 4.1. Conduct the following three commands:
