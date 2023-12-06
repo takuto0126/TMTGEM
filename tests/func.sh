@@ -34,9 +34,9 @@ function meshgen(){
 }
 
 #-------------------------------------------- COMCOT
-function sample3(){
+function runcomcot(){
   export PATH=$PATH:/usr/local/bin
-  fldr=$HOME/jenkins/TMTGEM/Tohoku/flow/
+  fldr=$HOME/jenkins/TMTGEM/$1/flow/
   cd $fldr
   chmod +x clean.sh
   ./clean.sh
