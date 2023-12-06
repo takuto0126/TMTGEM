@@ -12,7 +12,7 @@ nmcal upper bnd[km]| 500.0
 sizein  [km]       |17.0
 sizeout [km]       |40.0
 sizecoastratio [km]|0.35
-lenout  [km]       |100.0
+lenout  [km]       |150.0
 # of observatories |2
 name of obs        |ESA
 lon,lat[deg]alt[km]|141.35472       39.236944      0.0
