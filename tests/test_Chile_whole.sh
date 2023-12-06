@@ -4,7 +4,7 @@
 source $HOME/jenkins/TMTGEM/tests/func.sh
 
 testMktopoChile(){
-   mktopo Chile W130E155S33N45_1min.xyz
+   mktopo Chile W-81E-69S-53N-41_1min.xyz
    assertEquals 1 $?
 }
 
