@@ -4,9 +4,9 @@
 --------10--------20--------------------------------
 topofile           |../topo/W130E155S33N45_1min.xyz
 west bound  [deg]  | 138.5
-east bound  [deg]  | 149.5
-south bound [deg]  | 34.5
-north bound [deg]  | 43.5
+east bound  [deg]  | 146.0
+south bound [deg]  | 37.5
+north bound [deg]  | 41.0
 nmcal lower bnd[km]| -500.0
 nmcal upper bnd[km]| 500.0
 sizein  [km]       |17.0
