@@ -72,10 +72,10 @@
  Bottom Friction Switch? (0:Yes,1:No,2:var. n ) :     1
  Manning's Roughness Coef. (For fric.option=0)  :     0.013
  Layer Ouput Option? (0:Z+Hu+Hv;1:Z Only;2:NONE):     0
- X_start                                        :  131.0
- X_end                                          :  154.0
- Y_Start                                        :   33.0
- Y_end                                          :   43.0
+ X_start                                        :  138.5
+ X_end                                          :  146.0
+ Y_Start                                        :   37.5
+ Y_end                                          :   41.0
  File Name of Bathymetry Data                   :../topo/W130E155S33N45_1min.xyz
  Data Format Option (0-OLD;1-MOST;2-XYZ;3-ETOPO):     2
  Grid Identification Number                     :    01
