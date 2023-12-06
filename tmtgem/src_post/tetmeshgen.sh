@@ -23,15 +23,15 @@ cd -
 
 #[2]## gmsh polygonki.geo
 gmsh ${head}ki.geo -2 -format msh2 -bgm bgmesh.pos
-gmsh ${head}ki.msh  >& /dev/null &
+#gmsh ${head}ki.msh  >& /dev/null &
 
 #[3]## mshki2ocean.f90, to extract horizontal ocean mesh
 ${sdir}/mshki2ocean.exe < ${ctl}
-gmsh ${head}_ki.msh  >& /dev/null &
+#gmsh ${head}_ki.msh  >& /dev/null &
 
 #[4]## extrude.f90, to generate ocean.msh
 ${sdir}/extrude.exe < ${ctl}
-gmsh ocean.msh  >& /dev/null &
+#gmsh ocean.msh  >& /dev/null &
 
 
 #[5]## mk3dgeo.f90
