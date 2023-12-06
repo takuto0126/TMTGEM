@@ -1,7 +1,9 @@
-bxyz/* 
-exyz/* 
-vxyz/* 
-*.cpt 
-*.pdf 
-*.ps 
+*.cpt
+*.pdf
+*.ps
 *.dat
+*.grd
+.gmt*
+bxyz/*
+exyz/*
+vxyz/*
