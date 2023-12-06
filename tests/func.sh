@@ -51,17 +51,18 @@ function runcomcot(){
 }
 
 #------------------------------------------ em/run.sh
-function sample4(){
+function emrun(){
   export PATH=$PATH:/usr/local/bin
-  fldr=$HOME/jenkins/TMTGEM/Tohoku/em/
+  fldr=$HOME/jenkins/TMTGEM/$1/$2/
+  compfile=$3_bxyz_ts.dat
   cd $fldr
   chmod +x clean.sh
   ./clean.sh
   chmod +x run.sh
   ./run.sh
   cd -
-  fil1=~/jenkins/TMTGEM/Tohoku/em/bxyz/b14_bxyz_ts.dat
-  fil2=Tohoku_ref/b14_bxyz_ts.dat
+  fil1=${fldr}bxyz/$compfile
+  fil2=${1}_ref/$compfile
   rms=`paste $fil1 $fil2 | awk '{m+=($2 - $6)^2}END{printf "%15.7f", sqrt(m/NR);}'`
    echo $rms
    if [ `echo "$rms < 0.01" | bc` -eq 1 ]; then
