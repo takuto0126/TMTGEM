@@ -1,5 +1,5 @@
 #! /bin/sh
-# test Tohoku
+# test Chile
 
 function sample(){
   export PATH=$PATH:/usr/local/bin
@@ -17,7 +17,7 @@ function sample(){
   fi
 }
 
-testMktopoTohoku()
+testMktopoChile()
 {
    sample
    o1=`head -1 result.txt`
