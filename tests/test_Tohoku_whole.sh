@@ -4,6 +4,7 @@
 TEST_FLDR=`pwd`
 
 source $HOME/jenkins/TMTGEM/tests/func.sh
+
 setUP(){
    echo "setUP is called"
 }
