@@ -2,7 +2,7 @@
 #!/bin/sh
 
 # intel oneapi environment
-source /opt/intel/oneapi/setvars.sh > /dev/null 2>&1
+source /opt/intel/oneapi/setvars.sh
 
 # openMP threads
 export OMP_NUM_THREADS=8
