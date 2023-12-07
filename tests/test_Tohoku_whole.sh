@@ -1,8 +1,12 @@
 #! /bin/sh
 # test Tohoku
 
-source $HOME/jenkins/TMTGEM/tests/func.sh
+TEST_FLDR=`pwd`
 
+source $HOME/jenkins/TMTGEM/tests/func.sh
+setUP(){
+   echo "setUP is called"
+}
 testMktopoTohoku(){
    mktopo Tohoku
    assertEquals 1 $?
@@ -21,6 +25,11 @@ testComcotTohoku(){
 testTmtgemTohoku(){
    emrun Tohoku em b14
    assertEquals 1 $?
+}
+
+tearDown(){
+   echo "tearDown is called"
+   cd $TEST_FLDR
 }
 
 # load shunit2

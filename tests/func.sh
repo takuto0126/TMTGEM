@@ -25,7 +25,7 @@ function meshgen(){
   cd $fldr
   chmod +x tetmeshgen.sh # clean.sh is included intetmeshgen.sh
   ./tetmeshgen.sh > log.txt
-  cd -
+#  cd -
   if [ -e ${fldr}em3d.msh ];then
     echo "meshgen SUCCESS!!"
     return 1
@@ -41,10 +41,9 @@ function runcomcot(){
   fldr=$HOME/jenkins/TMTGEM/$1/flow/
   cd $fldr
   chmod +x clean.sh
-  ./clean.sh
-  chmod +x run_comcot.sh
+  chmod +x run_comcot.sh # clean.sh is included 2023.12.07
   ./run_comcot.sh
-  cd -
+#  cd -
   if [ -e ${fldr}z_01_000300.dat ];then
     echo "runcomcot SUCCESS!!"
     return 1 
@@ -61,10 +60,9 @@ function emrun(){
   compfile=$3_bxyz_ts.dat
   cd $fldr
   chmod +x clean.sh
-  ./clean.sh
-  chmod +x run.sh
+  chmod +x run.sh # clean.sh is included in run.sh 2023.12.07
   ./run.sh
-  cd -
+#  cd -
   fil1=${fldr}bxyz/$compfile
   fil2=${1}_ref/$compfile
   rms=`paste $fil1 $fil2 | awk '{m+=($2 - $6)^2}END{printf "%15.7f", sqrt(m/NR);}'`

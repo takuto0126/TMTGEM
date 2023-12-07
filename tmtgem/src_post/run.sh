@@ -13,7 +13,7 @@ make clean
 make
 cd -
 
-rm bxyz/* exyz/* vxyz/*
+./clean.sh
 
 time ${src}/ebfem_tsunamiEM.exe < tmtgem.ctl
 
