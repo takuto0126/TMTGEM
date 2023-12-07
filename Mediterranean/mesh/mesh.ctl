@@ -7,8 +7,8 @@ west bound  [deg]  |12.5
 east bound  [deg]  |22.5
 south bound [deg]  |31.3
 north bound [deg]  |38.5
-nmcal lower bnd[km]|-300.0
-nmcal upper bnd[km]|300.0
+nmcal lower bnd[km]|-400.0
+nmcal upper bnd[km]|400.0
 sizein  [km]       |25.0
 sizeout [km]       |50.0
 sizecoastratio [km]|0.5
