@@ -4,7 +4,7 @@ TEST_FLDR=`pwd`
 
 setUp(){
   export PATH=$PATH:/usr/local/bin
-  echo "setUP is called"
+  echo "setUp is called"
 }
 
 tearDown(){
