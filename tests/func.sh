@@ -2,7 +2,7 @@
 
 TEST_FLDR=`pwd`
 
-setUP(){
+setUp(){
   export PATH=$PATH:/usr/local/bin
   echo "setUP is called"
 }
@@ -21,7 +21,7 @@ function mktopo()
   rm *.xyz #> /dev/null 2>&1
   chmod +x mktopo.sh
   ./mktopo.sh
-  cd -
+#  cd -
   if [ -e $xyzfile ];then
     echo "mktopo SUCCESS!!"
     return 1 
