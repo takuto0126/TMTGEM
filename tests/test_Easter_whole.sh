@@ -19,7 +19,7 @@ testComcotEaster(){
 }
 
 testTmtgemEaster(){
-   emrun Easter em A01
+   emrun Easter em IPM
    assertEquals 1 $?
 }
 

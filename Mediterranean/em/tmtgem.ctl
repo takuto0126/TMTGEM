@@ -24,8 +24,8 @@ out folder  (exyz) |./exyz/
 out folder  (vxyz) |./vxyz/
 # of observatories |1
 1:lonlath,2:xyz[km]|1
-name of obs        |AQU
-lon,lat[deg]alt[km]|13.32            42.38        0.0
+name of obs        |A01
+lon,lat[deg]alt[km]|17.5           36.0           0.0
 0:no,1:nxny,2:seafl|1
 nx, ny             |200         200
 time interval [sec]|60.0

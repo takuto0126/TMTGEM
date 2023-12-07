@@ -3,10 +3,10 @@
 ## It is confirmed that this control file works well
 --------10--------20--------------------------------
 topofile           |../topo/topo.xyz
-west bound  [deg]  | 12.0
-east bound  [deg]  | 23.0
-south bound [deg]  | 31.0
-north bound [deg]  | 38.8
+west bound  [deg]  | 12.5
+east bound  [deg]  | 22.5
+south bound [deg]  | 31.3
+north bound [deg]  | 38.5
 nmcal lower bnd[km]| -500.0
 nmcal upper bnd[km]| 500.0
 sizein  [km]       |20.0
