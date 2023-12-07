@@ -11,11 +11,11 @@ function mktopo()
   ./mktopo.sh
   cd -
   if [ -e $xyzfile ];then
-    return 1 
     echo "mktopo SUCCESS!!"
+    return 1 
   else
-    return 0 
     echo "mktopo Failure..."
+    return 0 
   fi
 }
 
@@ -30,9 +30,10 @@ function meshgen(){
   cd -
   if [ -e ${fldr}em3d.msh ];then
     echo "meshgen SUCCESS!!"
+    return 1
   else
-    return 0 
     echo "meshgen Failure..."
+    return 0 
   fi
 }
 
@@ -47,11 +48,11 @@ function runcomcot(){
   ./run_comcot.sh
   cd -
   if [ -e ${fldr}z_01_000300.dat ];then
-    return 1 
     echo "runcomcot SUCCESS!!"
+    return 1 
   else
-    return 0 
     echo "runcomcot Failure..."
+    return 0 
   fi
 }
 
@@ -72,8 +73,9 @@ function emrun(){
    echo RMS = $rms
    if [ `echo "$rms < 0.01" | bc` -eq 1 ]; then
     echo "emrun SUCCESS!!"
+    return 1
   else
-    return 0 
     echo "emrun Failure..."
+    return 0 
   fi
 }
