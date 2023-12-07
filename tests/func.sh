@@ -23,9 +23,7 @@ function meshgen(){
   export PATH=$PATH:/usr/local/bin
   fldr=$HOME/jenkins/TMTGEM/$1/mesh/
   cd $fldr
-  chmod +x clean.sh
-  ./clean.sh
-  chmod +x tetmeshgen.sh
+  chmod +x tetmeshgen.sh # clean.sh is included intetmeshgen.sh
   ./tetmeshgen.sh > log.txt
   cd -
   if [ -e ${fldr}em3d.msh ];then
