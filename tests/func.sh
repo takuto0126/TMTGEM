@@ -1,8 +1,20 @@
 #!/bin/bash
 
+TEST_FLDR=`pwd`
+
+setUP(){
+  export PATH=$PATH:/usr/local/bin
+  echo "setUP is called"
+}
+
+tearDown(){
+   echo "tearDown is called"
+   cd $TEST_FLDR
+}
+
+
 function mktopo()
 {
-  export PATH=$PATH:/usr/local/bin
   fldr=$HOME/jenkins/TMTGEM/$1/topo/
   xyzfile=${fldr}topo.xyz
   cd $fldr
@@ -23,6 +35,7 @@ function meshgen(){
   export PATH=$PATH:/usr/local/bin
   fldr=$HOME/jenkins/TMTGEM/$1/mesh/
   cd $fldr
+  chmod +x clean.sh
   chmod +x tetmeshgen.sh # clean.sh is included intetmeshgen.sh
   ./tetmeshgen.sh > log.txt
 #  cd -
@@ -64,7 +77,7 @@ function emrun(){
   ./run.sh
 #  cd -
   fil1=${fldr}bxyz/$compfile
-  fil2=${1}_ref/$compfile
+  fil2=${TEST_FLDR}/${1}_ref/$compfile
   rms=`paste $fil1 $fil2 | awk '{m+=($2 - $6)^2}END{printf "%15.7f", sqrt(m/NR);}'`
    echo RMS = $rms
    if [ `echo "$rms < 0.01" | bc` -eq 1 ]; then
