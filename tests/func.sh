@@ -4,7 +4,7 @@ function mktopo()
 {
   export PATH=$PATH:/usr/local/bin
   fldr=$HOME/jenkins/TMTGEM/$1/topo/
-  xyzfile=${fldr}/$2
+  xyzfile=${fldr}topo.xyz
   cd $fldr
   rm *.xyz #> /dev/null 2>&1
   chmod +x mktopo.sh

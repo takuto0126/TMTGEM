@@ -1,25 +1,25 @@
 #! /bin/sh
-# test Chile
+# test Easter
 
 source $HOME/jenkins/TMTGEM/tests/func.sh
 
-testMktopoChile(){
-   mktopo Chile
+testMktopoEaster(){
+   mktopo Easter
    assertEquals 1 $?
 }
 
-testMeshgenChile(){
-   meshgen Chile
+testMeshgenEaster(){
+   meshgen Easter
    assertEquals 1 $?
 }
 
-testComcotChile(){
-   runcomcot Chile
+testComcotEaster(){
+   runcomcot Easter
    assertEquals 1 $?
 }
 
-testTmtgemChile(){
-   emrun Chile em A01
+testTmtgemEaster(){
+   emrun Easter em A01
    assertEquals 1 $?
 }
 

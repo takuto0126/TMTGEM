@@ -4,7 +4,7 @@
 source $HOME/jenkins/TMTGEM/tests/func.sh
 
 testMktopoTohoku(){
-   mktopo Tohoku W130E155S33N45_1min.xyz
+   mktopo Tohoku
    assertEquals 1 $?
 }
 
