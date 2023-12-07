@@ -12,8 +12,10 @@ function mktopo()
   cd -
   if [ -e $xyzfile ];then
     return 1 
+    echo "mktopo SUCCESS!!"
   else
     return 0 
+    echo "mktopo Failure..."
   fi
 }
 
@@ -27,9 +29,10 @@ function meshgen(){
   ./tetmeshgen.sh > log.txt
   cd -
   if [ -e ${fldr}em3d.msh ];then
-    return 1 
+    echo "meshgen SUCCESS!!"
   else
     return 0 
+    echo "meshgen Failure..."
   fi
 }
 
@@ -45,8 +48,10 @@ function runcomcot(){
   cd -
   if [ -e ${fldr}z_01_000300.dat ];then
     return 1 
+    echo "runcomcot SUCCESS!!"
   else
     return 0 
+    echo "runcomcot Failure..."
   fi
 }
 
@@ -66,8 +71,9 @@ function emrun(){
   rms=`paste $fil1 $fil2 | awk '{m+=($2 - $6)^2}END{printf "%15.7f", sqrt(m/NR);}'`
    echo RMS = $rms
    if [ `echo "$rms < 0.01" | bc` -eq 1 ]; then
-    return 1 
+    echo "emrun SUCCESS!!"
   else
     return 0 
+    echo "emrun Failure..."
   fi
 }

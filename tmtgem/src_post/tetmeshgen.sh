@@ -1,10 +1,9 @@
 # Coded on 11 Nov 2018
 #!/bin/bash
-source /opt/intel/oneapi/setvars.sh # 2021.05.29
+source /opt/intel/oneapi/setvars.sh > /dev/null 2>&1 # 2023.12.07
 
 head="polygon"
 sdir="../../tmtgem/mesh"
-#ctl="mesh_500.ctl"
 ctl="mesh.ctl"
 
 # [0] coastline.exe
