@@ -9,7 +9,7 @@ south bound [deg]  | -32.0
 north bound [deg]  | -22.0
 nmcal lower bnd[km]| -500.0
 nmcal upper bnd[km]| 500.0
-sizein  [km]       |17.0
+sizein  [km]       |15.0
 sizeout [km]       |70.0
 sizecoastratio [km]|0.35
 lenout  [km]       |300.0
