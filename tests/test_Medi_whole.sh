@@ -4,7 +4,7 @@
 source $HOME/jenkins/TMTGEM/tests/func.sh
 
 testMktopoMediterranean(){
-   mktopo Mediterranean W130E155S33N45_1min.xyz
+   mktopo Mediterranean W7E28S29N44_1min.xyz
    assertEquals 1 $?
 }
 

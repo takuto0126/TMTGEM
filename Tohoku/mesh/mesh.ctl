@@ -2,7 +2,7 @@
 ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
 ## It is confirmed that this control file works well
 --------10--------20--------------------------------
-topofile           |../topo/W130E155S33N45_1min.xyz
+topofile           |../topo/topo.xyz
 west bound  [deg]  | 138.5
 east bound  [deg]  | 146.0
 south bound [deg]  | 37.5
