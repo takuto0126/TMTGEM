@@ -8,7 +8,7 @@ ctl="mesh.ctl"
 
 # [0] coastline.exe
 cd $sdir
-make clean
+#make clean
 make
 cd -
 
