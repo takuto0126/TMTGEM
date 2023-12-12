@@ -1,15 +1,22 @@
-#### For testing TMTGEM
+#### Test TMTGEM Quickly #####
 ### The following test was done before mering Pull Request
 
-- Tohoku/flow
-$./run_comcot.sh
+1. In Tohoku/topo/ # generate topo.xyz
+$ ./mktopo.sh
+
+2. In Tohoku/flow
+$./run_comcot.sh         # run tsunami simulation
 $./plot_z.sh 000300
 
-- Tohoku/mesh
-$./tetmeshgen.sh
+3. In Tohoku/mesh
+$ chmod +x tetmeshgen.sh  
+$./tetmeshgen.sh        # generate tetrahedral mesh
 
-- Tohoku/em
-$run.sh
-$./bxyzplot.sh 000060 3
-$./plotcond.sh
-$./plotgeomag.sh
+4. In Tohoku/em 
+$ run.sh                  # run tsunami electromagnetic simualtion
+$./bxyzplot.sh 000060 3  # view the reults
+$./plotcond.sh           # view the conductivity map
+$./plotgeomag.sh         # view used ambient magnetic field
+
+# To execute *.sh, chmod +x ****.sh is required
+
