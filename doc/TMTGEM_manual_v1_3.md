@@ -9,10 +9,10 @@
 	});
 </script>
 
-# Manual of TMTGEM v1.2
+# Manual of TMTGEM v1.3
 ## Takuto Minami’s Tsunami-Generated Electro-Magnetic simulation code
 
-#### As of Dec 12, 2023
+#### As of Nov 11, 2023
 
 Takuto MINAMI
 tminami@port.kobe-u.ac.jp
@@ -284,7 +284,7 @@ All the control parameters for mesh generation are included in a control file, f
     ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
     ## It is confirmed that this control file works well
     --------10--------20--------------------------------
-    topofile           |../topo/topo.xyz input topofile
+    topofile           |../topo/W120E176S20N60_1min.xyz input topofile
     west bound  [deg]  | 140.0   see Fig. 8
     east bound  [deg]  | 148.0   see Fig. 8 
     south bound [deg]  | 34.0    see Fig. 8
@@ -428,23 +428,22 @@ Some options may not work. Please check source programs when behaviors are weird
 
 
 # 6. Release notes <a id="Release_notes"></a>
+### Version 1.3 (Dec 10, 2021)
+New parameter “nalyer” is added in solver/m_param.f90. More than one layer from comcot can be used in one simulation. Users can change # of layers at the line 12 in the control file to increase the layers in nested grid in comcot simulation. See Tohoku/em_2layer for example simulation.
 
-#### Version 1.2.4 (December 12, 2023)
-tmtgem/tests are prepared for tests and becomes available in github.com/takuto0126/TMTGEM.git
-
-#### Version 1.2.3 (July 26, 2021)
+### Version 1.2.3 (July 26, 2021)
 tmtgem/mesh/combine3d.f90 is modified to reflect more than 2 volumes in pre3d.msh to generate em3d.msh.
 
-#### Version 1.2.2 (May 31, 2021)
+### Version 1.2.2 (May 31, 2021)
 Bugs in mk3dgeo.f90 are fixed, where [2]make n3d [3] calzkiinland are arranged in the appropriate order. A part of he shell scripts in Tohoku/ are adjusted to gmt 6.
 
-#### Version 1.2.1 (May 24th, 2021)
+### Version 1.2.1 (May 24th, 2021)
 The shell scripts including gmt in Easter, Chile, and Mediterranean sample folders are updated for GMT6.
 
-#### Version 1.2 (Aug 5th, 2020)
+### Version 1.2 (Aug 5th, 2020)
 Bugs in the tmtgem/mesh/m_intersection.f90 and m_coastline.f90 are fixed in TIARES example in Aug 5th, 2020.
 
-#### Version 1.1
+### Version 1.1
 From ver 1.0 to ver 1.1, a new module was integrated to correct intersections as shown in Fig.12. Currently, this kind of intersections are automatically avoided by tmtgem/mesh/coastline.exe through intersection modules (see mesh/m_intersection.f90).
 From ver 1.0 to ver 1.1, no significant differences were made in the solver part in tmtgem/solver/*.
 
