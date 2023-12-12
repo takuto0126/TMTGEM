@@ -318,13 +318,14 @@ Please set as they are.
  
 polygonki.msh
 Fig. 8 Meanings of mesh generation parameters.
-	How to control the mesh seizes along coastlines (use “coastratio”)
+
+How to control the mesh seizes along coastlines (use “coastratio”)
  
 polygonki.msh
 Fig. 9. Meaning of parameters for resolution along coastlines.
 
 
-	How to set upper and lower boundaries for em3d.msh  (use “nmcal upper bnd” and “nmcal lower bnd”)
+How to set upper and lower boundaries for em3d.msh  (use “nmcal upper bnd” and “nmcal lower bnd”)
 
  
 pre3d.geo
@@ -332,7 +333,7 @@ Fig. 10. Structure of 3-D mesh.
 
 
 
-	How to control the number of layers in the ocean dependent on the ocean depth (use “# of max layers” and “nlayer=* up to [km]” )
+How to control the number of layers in the ocean dependent on the ocean depth (use “# of max layers” and “nlayer=* up to [km]” )
  
 < vertical section of em3d.msh >
 Fig. 11. Parameters controlling the number of layers in the ocean.
