@@ -78,7 +78,7 @@ function emrun(){
   ./run.sh
 #  cd -
   fil1=${fldr}bxyz/$compfile
-  fil2=${TMTGEM_HOME}/${1}_ref/$compfile
+  fil2=${TMTGEM_HOME}/tests/${1}_ref/$compfile
   rms=`paste $fil1 $fil2 | awk '{m+=($2 - $6)^2}END{printf "%15.7f", sqrt(m/NR);}'`
    echo RMS = $rms
    if [ `echo "$rms < 0.01" | bc` -eq 1 ]; then
