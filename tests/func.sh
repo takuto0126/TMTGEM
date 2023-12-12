@@ -1,6 +1,7 @@
 #!/bin/bash
 
-TEST_FLDR=`pwd`
+TMTGEM_HOME=`pwd`
+TEST_FLDR=${TMTGEM_HOME}/tests
 
 setUp(){
   export PATH=$PATH:/usr/local/bin
@@ -15,7 +16,7 @@ tearDown(){
 
 function mktopo()
 {
-  fldr=$HOME/jenkins/TMTGEM/$1/topo/
+  fldr=${TMTGEM_HOME}/$1/topo/
   xyzfile=${fldr}topo.xyz
   cd $fldr
   rm *.xyz #> /dev/null 2>&1
@@ -33,7 +34,7 @@ function mktopo()
 
 function meshgen(){
   export PATH=$PATH:/usr/local/bin
-  fldr=$HOME/jenkins/TMTGEM/$1/mesh/
+  fldr=${TMTGEM_HOME}/$1/mesh/
   cd $fldr
   chmod +x clean.sh
   chmod +x tetmeshgen.sh # clean.sh is included intetmeshgen.sh
@@ -51,7 +52,7 @@ function meshgen(){
 #-------------------------------------------- COMCOT
 function runcomcot(){
   export PATH=$PATH:/usr/local/bin
-  fldr=$HOME/jenkins/TMTGEM/$1/flow/
+  fldr=${TMTGEM_HOME}/$1/flow/
   cd $fldr
   chmod +x clean.sh
   chmod +x run_comcot.sh # clean.sh is included 2023.12.07
@@ -69,7 +70,7 @@ function runcomcot(){
 #------------------------------------------ em/run.sh
 function emrun(){
   export PATH=$PATH:/usr/local/bin
-  fldr=$HOME/jenkins/TMTGEM/$1/$2/
+  fldr=${TMTGEM_HOME}/$1/$2/
   compfile=$3_bxyz_ts.dat
   cd $fldr
   chmod +x clean.sh
@@ -77,7 +78,7 @@ function emrun(){
   ./run.sh
 #  cd -
   fil1=${fldr}bxyz/$compfile
-  fil2=${TEST_FLDR}/${1}_ref/$compfile
+  fil2=${TMTGEM_HOME}/${1}_ref/$compfile
   rms=`paste $fil1 $fil2 | awk '{m+=($2 - $6)^2}END{printf "%15.7f", sqrt(m/NR);}'`
    echo RMS = $rms
    if [ `echo "$rms < 0.01" | bc` -eq 1 ]; then
