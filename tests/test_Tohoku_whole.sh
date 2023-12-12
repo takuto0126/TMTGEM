@@ -1,7 +1,7 @@
 #! /bin/sh
 # test Tohoku
 
-source $HOME/jenkins/TMTGEM/tests/func.sh
+source tests/func.sh
 
 testMktopoTohoku(){
    mktopo Tohoku

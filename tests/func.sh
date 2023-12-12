@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TMTGEM_HOME=`pwd`
+TMTGEM_HOME=`pwd` # TMTGEM folder
 TEST_FLDR=${TMTGEM_HOME}/tests
 
 setUp(){
