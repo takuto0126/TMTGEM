@@ -1,4 +1,5 @@
 #!/bin/bash
+# Coded on Dec 12, 2023
 
 fil1=../Tohoku/em/bxyz/b14_bxyz_ts.dat
 fil2=../Tohoku/em_IGRF/bxyz/b14_bxyz_ts.dat
