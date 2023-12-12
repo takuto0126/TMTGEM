@@ -23,6 +23,16 @@ testTmtgemTohoku(){
    assertEquals 1 $?
 }
 
+testTmtgemTohoku(){
+   emrun Tohoku em_IGRF b14
+   assertEquals 1 $?
+}
+
+testTmtgemTohoku(){
+   emrun Tohoku em_woa b14
+   assertEquals 1 $?
+}
+
 
 # load shunit2
 . /usr/local/bin/shunit2

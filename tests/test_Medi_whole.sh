@@ -1,7 +1,7 @@
 #! /bin/sh
 # test Mediterranean
 
-source $HOME/jenkins/TMTGEM/tests/func.sh
+source tests/func.sh
 
 testMktopoMediterranean(){
    mktopo Mediterranean

@@ -1,7 +1,7 @@
 #! /bin/sh
 # test Chile
 
-source $HOME/jenkins/TMTGEM/tests/func.sh
+source tests/func.sh
 
 testMktopoChile(){
    mktopo Chile

@@ -1,7 +1,7 @@
 #! /bin/sh
 # test Easter
 
-source $HOME/jenkins/TMTGEM/tests/func.sh
+source tests/func.sh
 
 testMktopoEaster(){
    mktopo Easter
