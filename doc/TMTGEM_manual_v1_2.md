@@ -46,27 +46,26 @@ TMTGEM uses [Gmsh](https://www.soest.hawaii.edu/gmt/) for mesh generation and th
 	
 
 ## 2 Important notes <a id="ImportantNotes"></a>
+Note the following important settings in TMTGEM:
 Coordinate system: X: eastward, Y: northward, Z: upward in TMTGEM
-Solved equations: Refer to Minami et al. (2017, JGR) 
+Solved equations: Refer to [Minami et al. (2017, JGR)](#M2017) 
 TMTGEM : assumes topo data lon [deg], lat [deg], alt [m, downward positive]
 
 ## 3 Required environment <a id="Required_environments"></a>
-Please make the following packages installed in your PC
-[Gmsh](http://gmsh.info/) for mesh generation
-Intel fortran compiler with mkl library (confirm you can use “ifort –mkl=parallel ***”)
-GMT ([generic mapping tool](https://www.soest.hawaii.edu/gmt/)) for vieweing simulation results
-ghostscript (only for “gv” commands, e.g. in plot_z.sh in TMTGEM/Tohoku/flow)
+Please make the following packages installed in your PC:
+- [Gmsh](http://gmsh.info/) for mesh generation
+- Intel fortran compiler with mkl library (confirm you can use “ifort –qmkl=parallel ***”)
+- GMT6 ([generic mapping tool](https://www.soest.hawaii.edu/gmt/)) for vieweing simulation results
 
 ### Required data set
-Bathymetry data: please download xyz data from https://topex.ucsd.edu/WWW_html/mar_topo.html
-But downward positive bathymetry data is assumed for COMCOT and TMTGEM
-Please use, e.g. TMTGEM/Tohoku/topo/mktopo.sh, to change altitude signs.
+Bathymetry data: please download xyz data, for example, from https://topex.ucsd.edu/WWW_html/mar_topo.html
+But note again that downward positive bathymetry data is assumed for COMCOT and TMTGEM. Please use, e.g. TMTGEM/Tohoku/topo/mktopo.sh, to change altitude signs. 
 (Optional) Conductivity data: You can use ocean conductivity data by downloading
-(Optional) Background Earth’s magnetic field data
+(Optional) Background Earth’s magnetic field data (by default, IGRF12 can be used)
 
 ## 4 Run sample codes <a id="Run_sample_simulations"></a>
 Run TMTGEM anyway!! 
-In the home folder of TMTGEM/, four folders, Tohoku/, Chile/, Mediterranean/, and Easter/, are those for example simulations. Rough run time is listed in Table 1.
+In the home folder of TMTGEM/, four folders, Tohoku/, Chile/, Mediterranean/, and Easter/, are those for example simulations. Rough run times are listed in Table 1.
 
 Table 1. Overview of sample simulations and required time
 
@@ -87,40 +86,41 @@ As preparation, tsunami flow data and simulation mesh are necessary for tsunami 
 
 #### preparation of *.xyz topo file for tsunami simulation and TMTGEM mesh generation
 	$ cd TMTGEM/Tohoku/topo
-	$ ./mktopo.sh                       (topo.xyz is generated)
+	$ ./mktopo.sh                     (topo.xyz is generated)
 #### run comcot 
 	$ cd TMTGEM/Tohoku/flow
-    $ ./run_comcot.sh                   (generate tsunami flow data)
+    $ ./run_comcot.sh                 (generate tsunami flow data)
+	$ ./plot_z.sh 000600              (check tsunami height, see Fig. 1a)
 #### mesh generattion for TMTGEM
-	$ ./plot_z.sh 000600                (check tsunami height, see Fig. 1a)
 	$ cd TMTGEM/Tohoku/mesh
-	$ ./tetmeshgen.sh                   (mesh generation)
+	$ ./tetmeshgen.sh                 (mesh generation)
 #### check generated mesh
-	$ gmsh polygonki.msh                 (check generated 2d mesh, see Fig. 1b)
-	$ gmsh em3d.msh                      (check generated 3d mesh, see Fig. 1c)
+	$ gmsh polygonki.msh              (check generated 2d mesh, see Fig. 1b)
+	$ gmsh em3d.msh                   (check generated 3d mesh, see Fig. 1c)
 
 When the preparation is successful, users can see the following figures.
 ![Fig1](./images/Fig1.png)
 Fig. 1. (a) Tsunami height drawn by “./plot_z.sh 000600” in Tohoku/flow/. (b) 2-D mesh of polygonki.msh drawn by “gmsh polygonki.msh” in Tohoku/mesh/. (c) Final 3-D mesh drawn by “gmsh em3d.msh” in Tohoku/mesh/.
 
 ### 4.1.2 Run TMTGEM for Tohoku sample
-There are three types of example simulations using a relatively small Tohoku mesh, “Tohoku/mesh/em3d.msh”.
+There are three sample simulations using the Tohoku mesh, “Tohoku/mesh/em3d.msh”.
 
 ##### Tohoku/em/
- use of homogeneous background magnetic field and given ocean conductivity
+ use of homogeneous background magnetic field and homogeneous ocean conductivity
 ##### Tohoku/em_IGRF/
  use of IGRF background magnetic field with homogeneous ocean conductivity
 ##### Tohoku/em_woa/
  use of homogeneous background magnetic field and heterogeneous ocean conductivity
 
-All the above three samples generate almost the same results for the given short time evolution period of t = 5 min. Please confirm that TMTGEM runs well with several types of control files, e.g. Tohoku/em/tmtgem.ctl. In each file, please implement the following commands:
+All the above three samples generate almost the same results for the given short time evolution period of t = 5 min. Please confirm that TMTGEM runs well with several types of control files, e.g. Tohoku/em/tmtgem.ctl. For each sample, please implement the following commands:
 
-	$ cd TMTGEM/Tohoku/em             (case for Tohoku/em)
-	$ ./run.sh                        (run TMTGEM simulation)
-### simulation running
-	$ ./plotgeomag.sh                 (check the used ambient magnetic field; Fig. 2)
-	$ ./plotcond.sh                   (check the used ocean conductivity; Fig. 3)
-	$ ./bxyzplot.sh 000060 3          (check 3rd magnetic comp. (Bz) for it = 60; Fig. 4 )
+#### simulation running
+	$ cd TMTGEM/Tohoku/em         (case for Tohoku/em)
+	$ ./run.sh                    (run TMTGEM simulation)
+#### Check the simulation setting and results
+	$ ./plotgeomag.sh             (check the used ambient magnetic field; Fig. 2)
+	$ ./plotcond.sh               (check the used ocean conductivity; Fig. 3)
+	$ ./bxyzplot.sh 000060 3      (check 3rd magnetic comp. (Bz) for it = 60; Fig. 4 )
 	
 Users can see the following figures when sample simulation finished successfully.
 
@@ -137,11 +137,11 @@ Fig. 2b. Case for use of IGRF main fields. (geomag.pdf drawn by ./plotgeomag.sh 
 Fig. 3a. Map of ocean conductivity within tetrahedral elements facing sea surface (surfcond.out) and seafloor (bottcond.out). These figures are drawn by ./plotcond.sh in Tohoku/em/ or Tohoku/em_IGRF.
  
 ![Fig3b](./images/Fig3b.png)
-Fig. 3b. Map of ocean conductivity within tetrahedral elements facing sea surface (top row) and seafloor (bottom row). These figures are drawn by ./plotcond.sh in Tohoku/em_woa after simulation. Left column show the map calculated from the original 1 by 1 degree grid ocean conductivity data, woa13_decav81B0_C00an01.csv (Tyler et al., 2017) (“_wocomp” stands for “w/o complementation”). The right column shows the complemented ocean conductivity map for the TMTGEM simulation. In the left column, the empty bins are filled with a given default seawater conductivity of 3.3 S/m.
+Fig. 3b. Map of ocean conductivity within tetrahedral elements facing sea surface (top row) and seafloor (bottom row). These figures are drawn by ./plotcond.sh in Tohoku/em_woa after simulation. Left column show the map calculated from the original 1 by 1 degree grid ocean conductivity data, woa13_decav81B0_C00an01.csv ([Tyler et al., 2017](#T2017)) (“_wocomp” stands for “w/o complementation”). The right column shows the complemented ocean conductivity map for the TMTGEM simulation. In the left column, the empty bins are filled with a given default seawater conductivity of 3.3 S/m.
 
 ![Fig4](./images/Fig4.png)
 
-Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. The black contour lines indicate the same amplitude of the horizontal particle velocity. Note that almost the same results come out in smaple1/em_IGRF and Tohoku/em_woa at it = 000060.
+Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. The black contour lines indicate iso-magnitudes of the horizontal seawater velocity. Note that almost the same results come out in smaple1/em_IGRF and Tohoku/em_woa at it = 000060.
 
 [](![Fig6](./images/Fig6.png))
 
@@ -153,17 +153,21 @@ Fig. 4. Result of “./bxyzplot.sh 000060 3” in Tohoku/em after simulation. Th
 
 ## 4.2 Sample 2: Easter Island
 TMTGEM can deal with isolated island in open ocean.  Procedure for running sample simulation is the same as Section 4.0 and 4.1. Conduct the following three commands:
-in TMTGEM/Easter/flow/
+In TMTGEM/Easter/topo/
 
-	$./run_comcot.sh
+	$./mktopo.sh         (generate topo.xyz)
 
-in TMTGEM/Easter/mesh/
+In TMTGEM/Easter/flow/
 
-	$./tetmeshgen.sh
+	$./run_comcot.sh     (generate tsunami simulation data)
 
-in TMTGEM/Easter/em/
+In TMTGEM/Easter/mesh/
 
-	$./run.sh
+	$./tetmeshgen.sh     (generate tetrahedral mesh for TMTGEM)
+
+In TMTGEM/Easter/em/
+
+	$./run.sh           (run TMTGEM electromagnetic simulation)
 
 Results are as follows:
 
@@ -178,21 +182,7 @@ Figure 10. (a) Vertical component of tsunami magnetic field, drawn by “./bxyap
 
 
 ## 4.3 Sample 3: Chile
-TMTGEM newly became capable of dealing with topography area whose top right corner is in land. In the same manner as the previous samples, one can obtain the results in the following procedure:
-
-in TMTGEM/Chile/flow/
-
-	$./run_comcot.sh
-
-in TMTGEM/Chile/mesh/
-
-	$./tetmeshgen.sh
-
-in TMTGEM/Chile/em/
-
-	$./run.sh
-
-Results are as follows:
+TMTGEM newly became capable of dealing with topography area whose top right corner is in land. In the same manner as the previous samples, one can obtain the results. Results are as follows:
 
 ![Fig11](./images/Fig11.png) 
 
@@ -211,21 +201,7 @@ Figure 13. Same as Fig. 10 but for the simulation in Chile/em. For (a) to (d), p
 
 
 ## 4.4 Sample 4: Mediterranean
-	Modified mesh generator in TMTGEM can robustly work in very complicated bathymetry area as Mediterranean, where many islands and peninsulas are cut by calculation boundaries.
-
-in TMTGEM/Mediterranean/flow/
-
-	$./run_comcot.sh
-
-in TMTGEM/ Mediterranean /mesh/
-
-	$./tetmeshgen.sh
-
-in TMTGEM/ Mediterranean /em/
-
-	$./run.sh
-
-Results are as follows:
+Modified mesh generator in TMTGEM can robustly work in very complicated bathymetry area as Mediterranean, where many islands and peninsulas are cut by calculation boundaries. Run the sample in the same manner as Tohoku and Chile examples. Results are as follows:
 
 ![Fig14](./images/Fig14.png) 
 
@@ -246,7 +222,7 @@ Figure 15. Results of comcot simulation drawn by “./plot_z.sh 000600” in Med
 Figure 16. Result for Mediterranean/em. The figure formats are the same as Fig. 10. Note in (b) and (d) that values are reasonable within the black rectangle area that corresponds to the comcot calculation area.
  Vertical component of tsunami-generated magnetic field, drawn by “./bxyaplot.sh 000060 3” (left), Fz from IGRF drawn by 
 
-	$./plotgeomag.sh (center) 
+	$./plotgeomag.sh
 	
 and surface conductivity drawn by in Mediterranean/em
 
@@ -256,13 +232,13 @@ and surface conductivity drawn by in Mediterranean/em
 ## 5.1 Mesh generation part
 The most important and difficult part in TMTGEM is to generate appropriate tetrahedral mesh for tsunami EM simulations. A rough mesh generation flow is as follows, all of which is in tetmeshgen.sh in each mesh generation folder, e.g. Tohoku/mesh:
 
-Generate 2-D triangle mesh
-Read bathymetry data and reflect it in triangular mesh
-Extrude the surface triangle to the seafloor to generate ocean 3-D mesh (mesh1)
-Generate 3-D tetrahedral mesh for air and solid earth (mesh2)
-Combine mesh 1 and mesh2 for 3-D EM simulation
+1. Generate 2-D triangle mesh
+2. Read bathymetry data and reflect it in triangular mesh
+3. Extrude the surface triangle to the seafloor to generate ocean 3-D mesh (mesh1)
+4. Generate 3-D tetrahedral mesh for air and solid earth (mesh2)
+5. Combine mesh1 and mesh2 for 3-D EM simulation mesh
 
-Read Fig. 1 in Minami et al. (2017) for understanding the flow.
+See Fig. 1 in Minami et al. (2017) for understanding the flow.
 
 < Important output files by tetmeshgen.sh >
 *.geo : geometry files (use gmsh to view)
@@ -275,7 +251,6 @@ lineinfo.dat : line data for em3d.msh
 View of output meshes (use gmsh to view each mesh file)
 
 ![Fig17](./images/Fig17.png)
-
 Fig. 17 Example outputs of tetmeshgen.sh.
 
 All the control parameters for mesh generation are included in a control file, for example Tohoku/mesh/mesh.ctl. See below for the meaning of each parameters in mesh.ctl.
@@ -284,44 +259,50 @@ All the control parameters for mesh generation are included in a control file, f
     ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
     ## It is confirmed that this control file works well
     --------10--------20--------------------------------
-    topofile           |../topo/topo.xyz input topofile
-    west bound  [deg]  | 140.0   see Fig. 8
-    east bound  [deg]  | 148.0   see Fig. 8 
-    south bound [deg]  | 34.0    see Fig. 8
-    north bound [deg]  | 42.0    see Fig. 8
-    nmcal lower bnd[km]| -500.0  see Fig. 10
-    nmcal upper bnd[km]| 1000.0  see Fig. 10
-    sizein  [km]       |20.0     see Fig. 8
-    sizeout [km]       |100.0    see Fig. 8
-    sizecoastratio [km]|0.3      see Fig. 9
-    lenout  [km]       |300.0    see Fig. 8
-    # of observatories |2        # of observatory where you need fine mesh
-    name of obs        |ESA      Name of Obs
-    lon,lat[deg]alt[km]|141.35472       39.236944      0.0(Alt is not used)
+    topofile           |../topo/topo.xyz (input topofile)
+    west bound  [deg]  | 140.0           (see Fig. 18)
+    east bound  [deg]  | 148.0           (see Fig. 18) 
+    south bound [deg]  | 34.0            (see Fig. 18)
+    north bound [deg]  | 42.0            (see Fig. 18)
+    nmcal lower bnd[km]| -500.0          (see Fig. 20)
+    nmcal upper bnd[km]| 1000.0          (see Fig. 20)
+    sizein  [km]       |20.0             (see Fig. 18)
+    sizeout [km]       |100.0            (see Fig. 18)
+    sizecoastratio [km]|0.3              (see Fig. 19)
+    lenout  [km]       |300.0            (see Fig. 18)
+    # of observatories |2                (# of observatory where you need fine mesh)
+    name of obs        |ESA              (Name of Observatory)
+    lon,lat[deg]alt[km]|141.35472       39.236944      0.0         (*)
     name of obs        |b14
-    lon,lat[deg]alt[km]|144.807595      39.0582       -5.380 (format g15.7)
-    reso at obs [km]   |1.0      see Fig. 8
-    sigma forGauss [km]|50.0     see Fig. 8
-    0:none,1:vres<hres |0        set 0 anyway
-    # of max layers    |3        see Fig. 11
-    nlayer=1 up to [km]|-0.3     see Fig. 11
-    nlayer=2 up to [km]|-2.0     see Fig. 11
+    lon,lat[deg]alt[km]|144.807595      39.0582       -5.380       (format g15.7)
+    reso at obs [km]   |1.0              (see Fig. 18)
+    sigma forGauss [km]|50.0             (see Fig. 18)
+    0:none,1:vres<hres |0                (set 0 anyway)
+    # of max layers    |3                (see Fig. 21)
+    nlayer=1 up to [km]|-0.3             (see Fig. 21)
+    nlayer=2 up to [km]|-2.0             (see Fig. 21)
     header             |polygon  you may change but “polygon” is safe
     bgmesh: upzin  [km]|20.0
     bgmesh: downzin[km]|-20.0
     bgmesh:sizein3d[km]|14.0        
     Here are parameters for bgmesh3d.pos, which are not used for now.
 
-Please set as they are.
+*: Alt is not used in the mesh generation.
 
 ## < How to control 2-D triangular mesh >
- 
+See the below figures to understand each parameter in mesh.ctl.
+- sizein: horizontal spatial resolution of triangular mesh within the inner ragion
+- sizeout: horizontal spatial resolution of triangular mesh on the horizontal calculation boundaries
+saki
+
 polygonki.msh
-Fig. 8 Meanings of mesh generation parameters.
+![Fig18](./images/Fig18.png)
+Fig. 18 Meanings of mesh generation parameters.
 
 How to control the mesh seizes along coastlines (use “coastratio”)
  
 polygonki.msh
+![Fig19](./images/Fig19.png)
 Fig. 9. Meaning of parameters for resolution along coastlines.
 
 
@@ -329,21 +310,23 @@ How to set upper and lower boundaries for em3d.msh  (use “nmcal upper bnd” a
 
  
 pre3d.geo
-Fig. 10. Structure of 3-D mesh.
+![Fig20](./images/Fig20.png)
+Fig. 20. Structure of 3-D mesh.
 
 
 
 How to control the number of layers in the ocean dependent on the ocean depth (use “# of max layers” and “nlayer=* up to [km]” )
  
 < vertical section of em3d.msh >
-Fig. 11. Parameters controlling the number of layers in the ocean.
+![Fig21](./images/Fig21.png)
+Fig. 21. Parameters controlling the number of layers in the ocean.
 
 Note: Use of background mesh “bgmesh3d.pos” is not available for now.
 
 
 
 ## 5.2 Time-domain simulation part
-	Control parameter is for simulation part, e.g. Tohoku/em_large/tohoku.ctl, is as follows:
+Control parameter is for simulation part, e.g. Tohoku/em_large/tohoku.ctl, is as follows:
 
 < TMTGEM/Tohoku/em_large/tohoku.ctl >
 
@@ -378,8 +361,8 @@ Note: Use of background mesh “bgmesh3d.pos” is not available for now.
 	obs name           |b14
 	obs position [km]  |144.807595     39.0582          -5.380        <- position 3g15.7
 	0:no,1:nxny,2:seafl|1   plan view option: 1:gridded, 2: every triangles 
-	nx, ny             |400         400                               <- Number of grid points in x, y direction
-	time interval [sec]|60.0                                          <- stime internal for plan view output
+	nx, ny             |400         400              <- Number of grid points in x, y direction
+	time interval [sec]|60.0                         <- stime internal for plan view output
 	1:same dpth,2:seafl|2                            <- z for plan view 1:same depth, 2: at seafloor
 	nx,ny-> kimsh file |../mesh_large/polygonki.msh  <- mesh info for plan view
 	nx,ny->ki23dptr fl |../mesh_large/ki23dptr.dat   <- mesh info for plan view
@@ -388,25 +371,25 @@ Note: Use of background mesh “bgmesh3d.pos” is not available for now.
 	ocean cond [S/m]   |3.3   sea water cond (default value)
 	crust cond [S/m]   |0.01  crust/mantle cond
 	1:no,2:ocecond file|2     1 for homogeneous, 2: from file
-	need woa csv file  |../../woa/woa13_decav81B0_C00an01.csv seawater cond
+	need woa csv file  |../../woa/woa13_decav81B0_C00an01.csv <-seawater cond
 
 
 Some options may not work. Please check source programs when behaviors are weird.
 
-# 5.3 Output files of TMTGEM <a id="Output_files"></a>
-1)  ### "bxyz/[Site Name]_bxyz_ts.dat"
+## 5.3 Output files of TMTGEM <a id="Output_files"></a>
+1)  #### "bxyz/[Site Name]_bxyz_ts.dat"
 	If you set “# of observatories” > 0 and set “obs name” and the obs positions, you will get time series of magnetic field and electric field in ./bxyz/ and ./exyz/ respectively with default setting of output folders. The 4-column format of the magnetic time series file is:
 	Time [sec],  bx [nT], by [nT], bz [nT] 
 	Note here that bx, by and bz are eastward, northward, upward components of the tsunami-generated magnetic field, respectively.
 
-2) ### "exyz/[Site Name]_exyz_ts.dat"
+2) #### "exyz/[Site Name]_exyz_ts.dat"
 	Similar to bxyz/[Site Name]_bxyz_ts.dat, you can also get the electric field from TMTGEM run at every observation site. The 10-column format is:
 
 	Time [sec], [x,y,z components of e], [those of v×F], [those of e+v×F]
  
 	Here, e is the induced electric field, v×F is the inducing electromotive force, e+v×F is the total electric field to be observed by instruments. All the values are in the unit of [μV/m]The direction of x,y,z components are the same as [Site Name]_bxyz_ts.dat
 
-3) ### "bxyz/bxyz_xy2D******.dat"  (with coord_xy2D.dat)  
+3) #### "bxyz/bxyz_xy2D******.dat"  (with coord_xy2D.dat)  
 	If you use “plan view option” with 1 or 2, you can get output files for plan view of simulated magnet variation. The files named by bxyz_xy2D*****.dat are saved every “time interval [sec]” in bxyz/ folder. ******* indicates the iteration step, then the file corresponds to the snapshot for t=****** × “time interval [sec]”. The file format is 3 column:
 
 	bx [nT], by [nT], bz[nT]
@@ -419,7 +402,7 @@ Some options may not work. Please check source programs when behaviors are weird
 
 	Here, X,Y,Z are the eastward, northward distances, and elevation based on sea level.
 
-4) ### "exyz/ixyh_xy2D******.dat" (with coord_xy2D.dat)
+4) #### "exyz/ixyh_xy2D******.dat" (with coord_xy2D.dat)
 	The output files for total electric current density $$i_H h=∫σ[e_H+(v×F)_H]dz$$ that is vertically integrated in the ocean layer. The unit of the value is [μA\/m^2×km]=[A/km].The 2-column format is:
 
 	$ih_x$ (A/km), $ih_y$ (A/km)
@@ -428,7 +411,7 @@ Some options may not work. Please check source programs when behaviors are weird
 
 
 
-# 6. Release notes <a id="Release_notes"></a>
+## 6. Release notes <a id="Release_notes"></a>
 
 #### Version 1.2.4 (December 12, 2023)
 tmtgem/tests are prepared for tests and becomes available in github.com/takuto0126/TMTGEM.git
@@ -453,21 +436,21 @@ From ver 1.0 to ver 1.1, no significant differences were made in the solver part
 
 Fig. 22. Intersection occurrence in polygonki.geo. (Visualized by “gmsh polygonki.geo”)
 
-# 7 Questions and comments are welcome!!<a id="Questions"></a>
-Please send messages to takuto.minami126@gmail.com when you face any difficulties while running TMTGEM. There should be many remaining bugs and this manual is not well written. I can revise this manual by reflecting your questions and comments, which can help other users. 
+## 7 Questions and comments are welcome!!<a id="Questions"></a>
+Please send messages to tminami@port.kobe-u.ac.jp when you face any difficulties while running TMTGEM. There should be many remaining bugs and this manual is not well written. I can revise this manual by reflecting your questions and comments, which can help other users. 
 
-# 8 References <a id="References"> </a>
+## 8 References <a id="References"> </a>
 
-- Kawashima, I., & Toh, H. (2016). Tsunami-generated magnetic fields may constrain focal mechanisms of earthquakes. Scientific reports, 6, 28603.<a id="KT2016"></a>
+- <a id="KT2016"></a> Kawashima, I., & Toh, H. (2016). Tsunami-generated magnetic fields may constrain focal mechanisms of earthquakes. Scientific reports, 6, 28603.
 
-- Minami, T., Toh, H., Ichihara, H., & Kawashima, I. (2017). Three‐Dimensional Time Domain Simulation of Tsunami‐Generated Electromagnetic Fields: Application to the 2011 Tohoku Earthquake Tsunami. Journal of Geophysical Research: Solid Earth, 122(12), 9559-9579. <a id="M2017"></a>
+- <a id="M2017"></a> Minami, T., Toh, H., Ichihara, H., & Kawashima, I. (2017). Three‐Dimensional Time Domain Simulation of Tsunami‐Generated Electromagnetic Fields: Application to the 2011 Tohoku Earthquake Tsunami. Journal of Geophysical Research: Solid Earth, 122(12), 9559-9579. 
 
-- Oishi, Y., Piggott, M. D., Maeda, T., Kramer, S. C., Collins, G. S., Tsushima, H., & Furumura, T. (2013). Three‐dimensional tsunami propagation simulations using an unstructured mesh finite element model. Journal of Geophysical Research: Solid Earth, 118(6), 2998-3018.<a id="O2013"></a>
+- <a id="O2013"></a> Oishi, Y., Piggott, M. D., Maeda, T., Kramer, S. C., Collins, G. S., Tsushima, H., & Furumura, T. (2013). Three‐dimensional tsunami propagation simulations using an unstructured mesh finite element model. Journal of Geophysical Research: Solid Earth, 118(6), 2998-3018.
 
-- Tyler, R. H., Boyer, T. P., Minami, T., Zweng, M. M., & Reagan, J. R. (2017). Electrical conductivity of the global ocean. Earth, Planets and Space, 69(1), 156. <a id="T2017"></a>
+- <a id="T2017"></a> Tyler, R. H., Boyer, T. P., Minami, T., Zweng, M. M., & Reagan, J. R. (2017). Electrical conductivity of the global ocean. Earth, Planets and Space, 69(1), 156.
  
 
-# Appendix A: Derivation of discretized form of the governing equation
+## Appendix A: Derivation of discretized form of the governing equation
 
 Given the governing equation,
 
@@ -517,7 +500,7 @@ which is rewritten in the matrix form as,
 $$[M_e ]+μσ_e [N_e ]  \frac{d}{dt} [Al]_e =s_e ⋅⋅⋅(8)$$
 
 $$ [Al]_e =[[Al]_1  [Al]_2  [Al]_3  [Al]_4  [Al]_5  [Al]_6 ]^T⋅⋅⋅(9)$$
-$$[M_e ]_{ij}=∫_{Ω_e}{(∇×w_i )⋅(∇×w_j )}dV=1/3v x_mn⋅1/3v x_{m'n'}×v=1/9v x_mn⋅x_{m'n'}⋅⋅⋅(10)$$
+$$[M_e ]_{ij}=∫_{Ω_e}{(∇×w_i )⋅(∇×w_j )}dV=\frac{1}{3v} x_{mn}⋅\frac{1}{3v} x_{m'n'}×v=\frac{v}{9}x_{mn}⋅x_{m'n'}⋅⋅⋅(10)$$
 $$[N_e ]_{ij}=∫_{Ω_e}[w_i⋅w_j dV]=∫_{Ω_e}[(λ_k ∇λ_l-λ_l ∇λ_k )⋅(λ_{k'} ∇λ_{l'}-λ_{l'} ∇λ_{k'} )dV]$$
 $$ =∫_{Ω_e}(λ_k λ_{k'} ∇λ_l⋅∇λ_{l'}-λ_k λ_{l'} ∇λ_l⋅∇λ_{k'}-λ_l λ_{k'} ∇λ_k⋅∇λ_{l'}+λ_l λ_{l'} ∇λ_k⋅∇λ_{k'} )dV$$
 $$=∇λ_l⋅∇λ_{l'} ∫_{Ω_e}[λ_k λ_{k'} dV]-∇λ_l⋅∇λ_{k'} ∫_{Ω_e}[λ_k λ_{l'} dV]$$
@@ -529,17 +512,19 @@ $$\frac{\partial u_{n+2}}{\partial t}=\frac{1}{2Δt} (3u_{n+2}-4u_{n+1}+u_n ).�
 Applying Eq. (13) to Eq. (8) leads to
 $$ \left[ [M_e ]+\frac{3μσ_e}{2Δt} [N_e ] \right] [[Al]_e ]_{n+2}=\frac{1}{2Δt} [N_e ](4[[Al]_e ]_{n+1}-[[Al]_e ]_n )+[s_e]_{n+2}⋅⋅⋅(14)$$
 
-# Appendix B: Scaling of the governing equation
-From eq. (14), the equation to be solved at each time step is rewritten as
+## Appendix B: Scaling of the governing equation
+In the TMTGEM code, the following scaling is adopted in solving the governing equation. From eq. (14), the equation to be solved at each time step is rewritten as
 
-$$∑_{j=1}^6 \left[ ∫_{Ω_e}{(∇×w_i )⋅(∇×w_j )dV+\frac{3μσ_e}{2Δt} [∫_{Ω_e}[w_i⋅w_j dV]]} [[Al]_j ]_{n+2} \right]=∑_{j=1}^6[\frac{1}{2Δt} [∫_{Ω_e}[w_i⋅w_j dV]](4[[Al]_j ]_{n+1}-[[Al]_j ]_n ) ]+μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i λ_m dV])⋅[v×B_0 ]_m ] .⋅⋅⋅(15)$$
+$$∑_{j=1}^6 \left[ ∫_{Ω_e}{(∇×w_i )⋅(∇×w_j )dV+\frac{3μσ_e}{2Δt} [∫_{Ω_e}[w_i⋅w_j dV]]} [[Al]_j ]_{n+2} \right]\\
+=∑_{j=1}^6[\frac{1}{2Δt} [∫_{Ω_e}[w_i⋅w_j dV]](4[[Al]_j ]_{n+1}-[[Al]_j ]_n ) ]+μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i λ_m dV])⋅[v×B_0 ]_m ] .⋅⋅⋅(15)$$
 
 In TMTGEM, scaled form of Eq. (15) is solved using the scaling length L, set to be 1000m in TMTGEM. Consider to rewrite Eq. (17) by using $∇=\frac{1}{L} ∇'$,$w=\frac{1}{L} w'$,$dV=L^3 dV'$, $Al[s⋅V/m⋅m]=∫A⋅dl=\frac{1}{L} Al'$, where $Al'$  [s⋅mV/km⋅km],and $E={\partial A}/{\partial t}$. Furthermore, we assume $v=\frac{1}{L}⋅v'$[mm/s] and $B_0=\frac{1}{L}^3⋅B_0'$  [nT] These replacements correspond to the fact that w and ∇ are constructed as w’ and ∇’ with the coordinate system in the unit of km.
 
 $$∑_{j=1}^6 ∫_{Ω_e}(\frac{1}{L} ∇'×\frac{1}{L} w'_i )⋅(\frac{1}{L} ∇'×\frac{1}{L} w_j') L^3 dV'+\frac{3μσ_e}{2Δt} ∫_{Ω_e}[\frac{1}{L} w_i'⋅\frac{1}{L} [w']_j L^3 dV']]$$
 
-$$  \frac{1}{L}  [[Al' ]_j]_{n+2} ]=∑_{j=1}^6[\frac{1}{2Δt} [∫_{Ω_e}[\frac{1}{L} w_i'⋅\frac{1}{L} [w']_j L^3 dV']](4[\frac{1}{L}  [Al' ]_j]_{n+1}-[\frac{1}{L}  [Al' ]_j]_n )+] μσ_e ∑_{m=1}^4[(∫_{Ω_e}[\frac{1}{L} w_i' λ_m L^3 dV'])⋅[[\frac{1}{L} v'×\frac{1}{L}^3  B_0' ]_m]_{n+2} ] $$
+$$  \frac{1}{L}  [[Al' ]_j]_{n+2} ]=∑_{j=1}^6[\frac{1}{2Δt} \left[∫_{Ω_e}\frac{1}{L} w_i'⋅\frac{1}{L} w'_j L^3 dV' \right] (4[\frac{1}{L}  [Al' ]_j]_{n+1}-[\frac{1}{L}  [Al' ]_j]_n )+] μσ_e ∑_{m=1}^4[(∫_{Ω_e}[\frac{1}{L} w_i' λ_m L^3 dV'])⋅[[\frac{1}{L} v'×\frac{1}{L}^3  B_0' ]_m]_{n+2} ] $$
 
-$$⟺∑_{j=1}^6[[∫_{Ω_e}[{(∇'×w_i' )⋅(∇'×w_j' )}dV'+\frac{3μσ_e}{2Δt} L^2 ∫_{Ω_e}[w_i'⋅[w']_j dV']] [Al']_j ]=∑_{j=1}^6[\frac{L^2}{2Δt} [∫_{Ω_e}[w_i'⋅[w']_j dV']](4[[Al']_j]_{n+1}-[Al'_j]_n )+] μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i' λ_m dV'])⋅[v'×B_0']_m ] $$
+$$⟺ ∑_{j=1}^6[[∫_{Ω_e}[{(∇'×w_i' )⋅(∇'×w_j' )}dV'+\frac{3μσ_e}{2Δt} L^2 ∫_{Ω_e}[w_i'⋅[w']_j dV']] [Al']_j ]\\
+ =∑_{j=1}^6[\frac{L^2}{2Δt} [∫_{Ω_e}[w_i'⋅[w']_j dV']](4[[Al']_j]_{n+1}-[Al'_j]_n )+] μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i' λ_m dV'])⋅[v'×B_0']_m ] $$
 
 
