@@ -28,7 +28,7 @@ function mktopo()
     return 1 
   else
     echo "mktopo Failure..."
-    return 0 
+    return 0
   fi
 }
 
