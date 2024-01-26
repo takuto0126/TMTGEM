@@ -2,17 +2,17 @@
 ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
 ## It is confirmed that this control file works well
 --------10--------20--------------------------------
-topofile           |../topo/W130E155S33N45_1min.xyz
+topofile           |../topo/topo.xyz
 west bound  [deg]  | 138.5
-east bound  [deg]  | 149.5
-south bound [deg]  | 34.5
-north bound [deg]  | 43.5
+east bound  [deg]  | 146.0
+south bound [deg]  | 37.5
+north bound [deg]  | 41.0
 nmcal lower bnd[km]| -500.0
 nmcal upper bnd[km]| 500.0
 sizein  [km]       |17.0
 sizeout [km]       |40.0
 sizecoastratio [km]|0.35
-lenout  [km]       |100.0
+lenout  [km]       |150.0
 # of observatories |2
 name of obs        |ESA
 lon,lat[deg]alt[km]|141.35472       39.236944      0.0

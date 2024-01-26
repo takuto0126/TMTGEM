@@ -1,15 +1,14 @@
 # Coded on 11 Nov 2018
 #!/bin/bash
-source /opt/intel/oneapi/setvars.sh # 2021.05.29
+source /opt/intel/oneapi/setvars.sh > /dev/null 2>&1 # 2023.12.07
 
 head="polygon"
 sdir="../../tmtgem/mesh"
-#ctl="mesh_500.ctl"
 ctl="mesh.ctl"
 
 # [0] coastline.exe
 cd $sdir
-make clean
+#make clean
 make
 cd -
 
@@ -23,15 +22,15 @@ cd -
 
 #[2]## gmsh polygonki.geo
 gmsh ${head}ki.geo -2 -format msh2 -bgm bgmesh.pos
-gmsh ${head}ki.msh  >& /dev/null &
+#gmsh ${head}ki.msh  >& /dev/null &
 
 #[3]## mshki2ocean.f90, to extract horizontal ocean mesh
 ${sdir}/mshki2ocean.exe < ${ctl}
-gmsh ${head}_ki.msh  >& /dev/null &
+#gmsh ${head}_ki.msh  >& /dev/null &
 
 #[4]## extrude.f90, to generate ocean.msh
 ${sdir}/extrude.exe < ${ctl}
-gmsh ocean.msh  >& /dev/null &
+#gmsh ocean.msh  >& /dev/null &
 
 
 #[5]## mk3dgeo.f90

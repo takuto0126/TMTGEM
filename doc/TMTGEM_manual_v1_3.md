@@ -87,7 +87,7 @@ As preparation, tsunami flow data and simulation mesh are necessary for tsunami 
 
 #### preparation of *.xyz topo file for tsunami simulation and TMTGEM mesh generation
 	$ cd TMTGEM/Tohoku/topo
-	$ ./mktopo.sh                       (Here W130E155S33N45_1min.xyz is generated)
+	$ ./mktopo.sh                       (topo.xyz is generated)
 #### run comcot 
 	$ cd TMTGEM/Tohoku/flow
     $ ./run_comcot.sh                   (generate tsunami flow data)
@@ -96,8 +96,8 @@ As preparation, tsunami flow data and simulation mesh are necessary for tsunami 
 	$ cd TMTGEM/Tohoku/mesh
 	$ ./tetmeshgen.sh                   (mesh generation)
 #### check generated mesh
-	$ gmsh polygonki.msh                      (check generated 2d mesh, see Fig. 1b)
-	$ gmsh em3d.msh                           (check generated 3d mesh, see Fig. 1c)
+	$ gmsh polygonki.msh                 (check generated 2d mesh, see Fig. 1b)
+	$ gmsh em3d.msh                      (check generated 3d mesh, see Fig. 1c)
 
 When the preparation is successful, users can see the following figures.
 ![Fig1](./images/Fig1.png)

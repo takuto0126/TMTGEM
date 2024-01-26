@@ -2,20 +2,20 @@
 ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
 ## It is confirmed that this control file works well
 --------10--------20--------------------------------
-topofile           |../topo/W-81E-69S-53N-41_1min.xyz
+topofile           |../topo/topo.xyz
 west bound  [deg]  | -78.0
 east bound  [deg]  | -72.0
 south bound [deg]  | -50.0
 north bound [deg]  | -44.0
 nmcal lower bnd[km]| -500.0
 nmcal upper bnd[km]| 500.0
-sizein  [km]       |20.0
-sizeout [km]       |200.0
+sizein  [km]       |18.0
+sizeout [km]       |60.0
 sizecoastratio [km]|0.35
 lenout  [km]       |200.0
 # of observatories |1
 name of obs        |A01
-lon,lat[deg]alt[km]|-75.4000        -46.886        0.0
+lon,lat[deg]alt[km]|-75.403455     -47.233520          0.0
 reso at obs [km]   |1.0
 sigma forGauss [km]|50.0
 0:none,1:vres<hres |0

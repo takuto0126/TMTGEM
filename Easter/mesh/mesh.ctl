@@ -2,14 +2,14 @@
 ## This control file is generated on Sep 7, 2016, (see m_param_mesh.f90)
 ## It is confirmed that this control file works well
 --------10--------20--------------------------------
-topofile           |../topo/W-121E-97S-38N-16_1min.xyz
-west bound  [deg]  | -117.0
-east bound  [deg]  | -101.0
-south bound [deg]  | -35.0
-north bound [deg]  | -19.8
+topofile           |../topo/topo.xyz
+west bound  [deg]  | -114.5
+east bound  [deg]  | -104.5
+south bound [deg]  | -32.0
+north bound [deg]  | -22.0
 nmcal lower bnd[km]| -500.0
 nmcal upper bnd[km]| 500.0
-sizein  [km]       |17.0
+sizein  [km]       |15.0
 sizeout [km]       |70.0
 sizecoastratio [km]|0.35
 lenout  [km]       |300.0

@@ -9,11 +9,11 @@ export OMP_NUM_THREADS=8
 
 src=../../tmtgem/solver
 cd $src
-make clean
+#make clean
 make
 cd -
 
-rm bxyz/* exyz/* vxyz/*
+./clean.sh # rm bxyz/* vxyz/* exyz/* etc.
 
 time ${src}/ebfem_tsunamiEM.exe < tmtgem.ctl
 
