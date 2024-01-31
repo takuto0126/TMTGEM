@@ -79,7 +79,7 @@ CALL CALCARTESIANBOUND(g_meshpara)
  CALL makecoast5(g_grd,g_coast)    ! make coast nodes and output coastfile
 ! call coastout6(g_coast,coastfile) ! commented out 2018.11.09
 
-      lpmax=2000 ! max total number of polygons
+      lpmax=4000 ! max total number of polygons
 
 !#[6]## compose polygon for land and oceans
  call allocatepoly(g_poly,lpmax,ncmax,lpmax) ! nclose for g_poly is unknow here
