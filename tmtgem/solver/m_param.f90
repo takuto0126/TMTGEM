@@ -334,12 +334,13 @@ end if
   g_cond%sigma_air = c_param%cond(1) ! 2024.02.01
   write(*,'(a,g15.7,a)') " sigma_air =",g_cond%sigma_air," [S/m]"
   read(input,*) g_cond%condflag  ! 0:homogeneous, 1:file
-  if (g_cond%condflag .eq. 0 ) then    ! nvolume homogeneous crust   2017.09.29
+  write(*,*) "g_cond%condflag = ",g_cond%condflag                   ! 2024.02.01
+  if (g_cond%condflag .eq. 0 ) then    ! nvolume homogeneous crust    2017.09.29
    write(*,*) "" ! 2020.09.29
    write(*,*) "<Input # of physical volumes in land region>"
    read(input,*) g_cond%nvolume ! # of physical volume in land, ! 11->* 2021.09.02
    write(*,*) "nvolume=",g_cond%nvolume
-   allocate( g_cond%sigma_land(g_cond%nvolume) )                  ! 2017.09.28
+   allocate( g_cond%sigma_land(g_cond%nvolume) )                    ! 2017.09.28
    write(*,*) "" ! 2020.09.29
    write(*,*) "<Inuput land sigma [S/m] for each physical volume>"  ! 2017.09.28
    do i=1,g_cond%nvolume
@@ -351,8 +352,7 @@ end if
    write(*,*) "cond file is",g_cond%condfile
    CALL READCOND(g_cond)          ! read conductivity structure
   else
-   write(*,*) "GEGEGE condflag should be 0 or 1 : condflag=",g_cond%condflag
-   stop
+   write(*,*) "no file and no nvolume condflag should be 0 or 1 : condflag=",g_cond%condflag!2024.02.01
   end if
 
 
