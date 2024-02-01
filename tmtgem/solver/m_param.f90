@@ -38,12 +38,17 @@ type param_forward
  !#[3]## water velocity info
  integer(4)    :: iflag_velocity ! 1 for comcot, 2 for analytic
  !#[3-1]## COMCOT (iflag_velocity = 1 )
- character(70) :: xgrdfile_v ! eastgrid
- character(70) :: ygrdfile_v ! northgrid
- character(70) :: hgrdfile   ! ocean depth file
- character(70) :: mpre       ! header for M file from comcot
- character(70) :: npre       ! header for N file from comcot
+ integer(4)    :: iflag_comcot_spherical ! comcot is done in 0:cartesian, 1:spherical coordinate 2021.12.08
+ integer(4)    :: nlayer     ! # of layer from version 1.3,       2021.12.02
+ character(70),allocatable,dimension(:) :: xgrdfile_v ! eastgrid  2021.12.02
+ character(70),allocatable,dimension(:) :: ygrdfile_v ! northgrid 2021.12.02
+ character(70),allocatable,dimension(:) :: hgrdfile   ! ocean depth file 2021.12.02
+ character(70),allocatable,dimension(:) :: mpre       ! header for M file from comcot 2021.12.02
+ character(70),allocatable,dimension(:) :: npre       ! header for N file from comcot 2021.12.02
+ character(70),allocatable,dimension(:) :: zpre       ! header for Z file from comcot 2021.12.02 Z is from v1.3
+ !#
  real(8)       :: dt_comcot  ! time interval of comcot result
+ real(8)       :: dt_sim_comcot  ! 2024.01.19 TT
  !#[3-2]## analytical velocity (iflag_velocity = 2)
  type(param_ana) :: h_anapara
 
@@ -117,7 +122,7 @@ subroutine readparam(c_param,g_cond)
 implicit none
 type(param_forward),intent(out) :: c_param
 type(param_cond),   intent(out) :: g_cond   ! 2024.02.01
-integer(4) :: i,j,input=5
+integer(4) :: i,j,ilayer,nlayer,input=5 ! 2021.12.08 ilayer is added
 
 !open(input,file="tohoku.ctl")
 read(input,*) ! header
@@ -148,19 +153,42 @@ write(*,*) "1: provide by COMCOT file, 2: analytical velocity"
 read(input,12) c_param%iflag_velocity
 write(*,*) "iflag_velocity=",c_param%iflag_velocity ! 2017.10.26
  !#[2-1]## COMCOT
-if ( c_param%iflag_velocity .eq. 1 ) then
- write(*,*) "Please enter x grid file"
- read(input,10) c_param%xgrdfile_v
- write(*,*) "Please enter y grid file"
- read(input,10) c_param%ygrdfile_v
- write(*,*) "Please enter h grid file"
- read(input,10) c_param%hgrdfile
- write(*,*) "Please enter M header file"
- read(input,10) c_param%mpre
- write(*,*) "Please enter N header file"
- read(input,10) c_param%npre
- write(*,*) "Please enter time interval for COMCOT results"
- read(input,11) c_param%dt_comcot
+ if ( c_param%iflag_velocity .eq. 1 ) then
+ write(*,*) "Please enter 0:Cartesian or 1:Spherical for COMCOT simulation"! 2021.12.08
+ read(input,12) c_param%iflag_comcot_spherical ! 2021.12.08
+ write(*,*) "iflag_comcot_spherical =", c_param%iflag_comcot_spherical ! 2021.12.08
+ write(*,*) "Please enter # of layer in COMCOT (nlyaer)" !2021.12.02
+ if (c_param%iflag_comcot_spherical .eq. 0) write(*,*) "COMCOT simulation was done in Cartesian coordinate"!2021.12.08
+ if (c_param%iflag_comcot_spherical .eq. 0) write(*,*) "COMCOT simulation was done in Spherical coordinate"!2021.12.08
+ read(input,12) c_param%nlayer               ! 2021.12.02
+ write(*,*) "# of layers is",c_param%nlayer  ! 2021.12.02
+ nlayer = c_param%nlayer
+ allocate(c_param%xgrdfile_v(nlayer))        ! 2021.12.02
+ allocate(c_param%ygrdfile_v(nlayer))        ! 2021.12.02
+ allocate(c_param%hgrdfile(  nlayer))        ! 2021.12.02
+ allocate(c_param%mpre(nlayer))              ! 2021.12.02
+ allocate(c_param%npre(nlayer))              ! 2021.12.02
+ allocate(c_param%zpre(nlayer))              ! 2021.12.02
+ do ilayer = 1,c_param%nlayer                ! 2021.12.02
+  write(*,*) "Please enter x grid file"
+  read(input,10) c_param%xgrdfile_v(ilayer)  ! 2021.12.02
+  write(*,*) "Please enter y grid file"
+  read(input,10) c_param%ygrdfile_v(ilayer)  ! 2021.12.02
+  write(*,*) "Please enter h grid file"
+  read(input,10) c_param%hgrdfile(ilayer)    ! 2021.12.02
+  write(*,*) "Please enter M header file"
+  read(input,10) c_param%mpre(ilayer)        ! 2021.12.02
+  write(*,*) "Please enter N header file"
+  read(input,10) c_param%npre(ilayer)        ! 2021.12.02
+  write(*,*) "Please enter Z header file"    ! 2021.12.02
+  read(input,10) c_param%zpre(ilayer)        ! 2021.12.02
+ end do                                      ! 2021.12.02
+ write(*,*) "Please enter time interval for save COMCOT results" 
+ read(input,11) c_param%dt_comcot    
+ write(*,*) "Please enter time interval for save COMCOT results"  ! 2024.01.19 TT
+ read(input,11) c_param%dt_sim_comcot            ! 2024.01.19 TT
+ ! refer to line34 in output.f90 in comcotv1_7
+ c_param%dt_comcot=c_param%dt_sim_comcot*NINT(c_param%dt_comcot/c_param%dt_sim_comcot)  ! 2024.01.19 TT
  !#[2-2]## analytical wave
 else if (c_param%iflag_velocity .eq. 2 ) then
  write(*,*) "Please input parameters for analytical velocity for LLW"
@@ -199,6 +227,7 @@ write(*,*) "0: use IGRF12 with COMCOT flow input (not available when using analy
 write(*,*) "1: provide input geomag file, 2: constant geomag vector"
 read(input,12)  c_param%iflag_geomag
 write(*,*)  "iflag_geomag=",c_param%iflag_geomag
+!################################################################### IGRF
 if (            c_param%iflag_geomag .eq. 0 ) then                                  ! 2018.11.14
  write(*,*) "IGRF will be used with the COMCOT grid info (read as X:lon, Y:lat)"    ! 2018.11.14
  write(*,*) "Please input decimal year for calculation of background magnetic field"! 2018.11.14
@@ -211,6 +240,8 @@ if (            c_param%iflag_geomag .eq. 0 ) then                              
  read(input,10) c_param%xgrdfile_f                     ! 2018.11.14
  write(*,*) "Please enter y grid file for geomag data" ! 2018.11.14
  read(input,10) c_param%ygrdfile_f                     ! 2018.11.14
+
+!################################################################### MAGNETIC DATA FILE
 else if (       c_param%iflag_geomag .eq. 1 ) then
  write(*,*) "Please enter x grid file for geomag data"
  read(input,10) c_param%xgrdfile_f
@@ -218,6 +249,8 @@ else if (       c_param%iflag_geomag .eq. 1 ) then
  read(input,10) c_param%ygrdfile_f
  write(*,*) "Please enter geomag file (north[nT],east[nT],down[nT])"
  read(input,10) c_param%geomagfile
+
+!################################################################### CONSTANT BACKGROUND MAGNETIC DATA
 else if (       c_param%iflag_geomag .eq. 2 ) then
  write(*,*) "Please enter vector geomagnetic field (east,north,upward)[nT]"
  read(input,13) c_param%geomagvector(1:3)
