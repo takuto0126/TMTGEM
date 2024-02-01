@@ -30,6 +30,7 @@ implicit none
 !       bz2          |                         (t=15s)
 !## for global mesh ###
 type(param_forward)                    :: g_param    ! see m_param.f90
+type(param_cond)                       :: g_cond     ! see mparam.f90 2024.02.01
 type(meshpara)                         :: g_meshpara ! see m_param_mesh.f90
 type(ocean_data)                       :: h_ocean    ! see m_oceanFvxyz.f90
 type(comcot_data)                      :: h_comcot   ! see m_oceanFvxyz.f90
@@ -55,7 +56,7 @@ real(8)             :: dt,tstart
 integer(4)          :: icalerrflag  ! 2017.10.26
 
 !#[0]## read parameters
-  CALL READPARAM(g_param)            ! see m_param.f90
+  CALL READPARAM(g_param,g_cond)            ! see m_param.f90 g_cond is added 2024.02.01
        tstart         = g_param%tstart
        dt             = g_param%dt
        itmax          = g_param%tmax/dt
