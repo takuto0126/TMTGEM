@@ -113,9 +113,10 @@ end type
 
 contains
 !################################################## subroutine readparam
-subroutine readparam(c_param)
+subroutine readparam(c_param,g_cond)
 implicit none
 type(param_forward),intent(out) :: c_param
+type(param_cond),   intent(out) :: g_cond   ! 2024.02.01
 integer(4) :: i,j,input=5
 
 !open(input,file="tohoku.ctl")
@@ -320,7 +321,7 @@ end if
   read(input,11) c_param%cond(i)
  end do
 
-!#[8]## global conductivity is used or not 2018.08.30
+!#[8]## global ocean conductivity is used or not 2018.08.30
  c_param%iflag_oceancond = 1 ! 2018.08.30
  write(*,*) "Input 1 for fixed conductivity, 2 for global conductivity data"!2018.08.30
  read(input,12,end=98) c_param%iflag_oceancond                      !2018.08.30
@@ -328,6 +329,32 @@ end if
   write(*,*) "Input csv file name for global coean cond from WOA"   !2018.11.13
   read(input,10)       c_param%woafile                              !2018.08.30
  end if                                                             !2018.08.30
+
+!#[9]##  read crust mantle conductivity information  ## 2024.02.01
+  g_cond%sigma_air = c_param%cond(1) ! 2024.02.01
+  write(*,'(a,g15.7,a)') " sigma_air =",g_cond%sigma_air," [S/m]"
+  read(input,*) g_cond%condflag  ! 0:homogeneous, 1:file
+  if (g_cond%condflag .eq. 0 ) then    ! nvolume homogeneous crust   2017.09.29
+   write(*,*) "" ! 2020.09.29
+   write(*,*) "<Input # of physical volumes in land region>"
+   read(input,*) g_cond%nvolume ! # of physical volume in land, ! 11->* 2021.09.02
+   write(*,*) "nvolume=",g_cond%nvolume
+   allocate( g_cond%sigma_land(g_cond%nvolume) )                  ! 2017.09.28
+   write(*,*) "" ! 2020.09.29
+   write(*,*) "<Inuput land sigma [S/m] for each physical volume>"  ! 2017.09.28
+   do i=1,g_cond%nvolume
+    read(input,*) g_cond%sigma_land(i) ! conductivity in land region 2017.09.28, ! 12->* 2021.09.02
+    write(*,*) i,"sigma_land=",g_cond%sigma_land(i),"[S/m]"
+   end do
+  else if (g_cond%condflag .eq. 1) then !  crust conductivity given by file
+   read(input,'(a50)') g_cond%condfile  ! 2021.10.04
+   write(*,*) "cond file is",g_cond%condfile
+   CALL READCOND(g_cond)          ! read conductivity structure
+  else
+   write(*,*) "GEGEGE condflag should be 0 or 1 : condflag=",g_cond%condflag
+   stop
+  end if
+
 
 98 continue ! 2018.08.30
 
