@@ -347,5 +347,59 @@ write(*,*) "c_param%lonlatflag=",c_param%lonlatflag
 stop
 end subroutine readparam
 !
+!----------------------------------------- READCOND
+subroutine READCOND(g_cond)
+implicit none
+type(param_cond),     intent(inout)  :: g_cond
+real(8),   allocatable,dimension(:)  :: rho
+integer(4),allocatable,dimension(:)  :: index
+integer(4) :: nphys2
+integer(4) :: i,input=11
+
+!#[1]## read condfile
+ write(*,*) "condfile : ",g_cond%condfile ! 2020.07.19
+ open(input,file=g_cond%condfile)
+!# header
+ do i=1,11      ! 2017.09.11 changed from 8 to 11
+  read(input,*)
+ end do
+  read(input,*) nphys2
+ allocate(rho(nphys2),index(nphys2)) !!! Important !!!!
+ do i=1,nphys2
+  read(input,*) index(i),rho(i)
+ end do
+ close(input)
+
+!#[2]## set g_cond
+ allocate(g_cond%rho(  nphys2))
+ allocate(g_cond%sigma(nphys2))
+ allocate(g_cond%index(nphys2)) ! added on 2017.05.10
+ g_cond%rho    = rho
+ g_cond%nphys2 = nphys2
+ g_cond%sigma  = -9999. ! 2017.11.06
+ do i=1,nphys2
+  if (abs(rho(i)) .gt. 1.d-10 ) g_cond%sigma(i) = 1.d0/rho(i) ! 2017.11.06
+!  write(*,*) i,"g_cond%sigma(i)=",g_cond%sigma(i)
+ end do
+write(*,*) "g_cond%nphys2 =",g_cond%nphys2 ! 2021.01.08
+write(*,*) "### READCOND  END!! ###"       ! 2020.09.29
+return
+end subroutine
+!----------------------------------------- deallocatecond
+! Coded on 2017.05.14
+subroutine deallocatecond(g_cond)
+implicit none
+type(param_cond),intent(inout) :: g_cond
+
+g_cond%ntet   = 0
+g_cond%nphys1 = 0! # of elements of air
+g_cond%nphys2 = 0! # of elements in land
+if (allocated(g_cond%index)) deallocate(g_cond%index) ! element id for nphys 2, 2018.10.05
+if (allocated(g_cond%sigma)) deallocate(g_cond%sigma) ! [S/m]   2018.10.05
+if (allocated(g_cond%rho)  ) deallocate(g_cond%rho  ) ! [Ohm.m] 2018.10.05
+
+return
+end subroutine
+
 
 end module param
