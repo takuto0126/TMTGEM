@@ -96,6 +96,20 @@ type param_forward
  character(70) :: woafile      ! name global conductivity data from WOA
  end type
 
+type param_cond ! 2024.02.01
+ integer(4)    :: condflag ! 0: (partitioned) homegeneous earth, 1: file is given
+ character(50) :: condfile
+ integer(4)    :: ntet
+ integer(4)    :: nphys1 ! # of elements of air
+ integer(4)    :: nphys2 ! # of elements in land
+ real(8)       :: sigma_air=1.d-8 ! [S/m]
+ integer(4),allocatable,dimension(:) :: index ! element id for nphys 2, 2017.05.10
+ real(8),   allocatable,dimension(:) :: sigma ! [S/m]
+ real(8),   allocatable,dimension(:) :: rho   ! [Ohm.m]
+ integer(4)    :: nvolume     ! # of region for land  ( condflag = 0 )2017.09.28
+ real(8),   allocatable,dimension(:) :: sigma_land  ! ( condflag = 0 )2017.09.28
+end type
+
 
 contains
 !################################################## subroutine readparam
