@@ -88,7 +88,7 @@ integer(4)          :: icalerrflag  ! 2017.10.26
 
 !#[Ocean conductivity option]##                 ! 2018.11.13
   CALL GENOCEANPTR(h_ocean,em_mesh,g_param)     ! see m_oceanFvxyz.f90 2017.11.02
-  CALL setoceancond(em_mesh,g_param,h_ocean)    ! m_caloceancond.f90 2018.11.13
+  CALL setoceancond(em_mesh,g_param,h_ocean,g_cond)! m_caloceancond.f90 2024.02.01
 
 !#[2]## allocate h_ocean, calculate nodes, em2oceanptr, ocean2emptr
   it = 0
@@ -122,7 +122,7 @@ integer(4)          :: icalerrflag  ! 2017.10.26
 
 !#[5]## constract A and PARDISO factorise
   if ( icalerrflag .ge. 2 ) then ! 1 for err, 2 for cal, 3 for both
-   CALL forward_LHS(A,em_mesh,l_line,igroup,dt,g_param)
+   CALL forward_LHS(A,em_mesh,l_line,igroup,dt,g_param,g_cond) ! g_cond is added 2024.02.01
    CALL PARDISOphase1(A,B) ! initialize, see m_solvePARDISO.f90
    CALL PARDISOphase2(B)   ! factolize, see m_solvePARDISO.f90
   end if

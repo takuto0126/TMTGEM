@@ -38,4 +38,6 @@ ocean cond [S/m]   |3.3
 crust cond [S/m]   |0.01
 1:no,2:ocecond file|1
 need woa csv file  |../../woa/woa13_decav81B0_C00an01.csv
+0:homo,1:file crust|1
+condfile           |cond.dat
 
