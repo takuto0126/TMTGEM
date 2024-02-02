@@ -6,7 +6,7 @@ FC=ifort
 #OPT=-i-dynamic
 #OPT0= -O3 -xAVX -mkl=parallel
 #OPT0= -O -fpe0 -check bounds -traceback -g  -mkl=parallel
-OPT0= -O -fpe0 -check bounds -traceback -g  -mkl=parallel -qopenmp
+OPT0= -O -fpe0 -check bounds -traceback -g  -qmkl=parallel -qopenmp
 
 #OPT0= -O3 -xAVX -mkl=parallel -qopenmp
 
