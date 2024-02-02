@@ -2,7 +2,8 @@
 # slice.exe is added on 2017.12.20
 # Coded on August 15, 2015 by T. MINAMI
 
-FC=gfortran
+#FC=gfortran
+FC=ifort
 MPIFC=mpif90
 #OPT=-i-dynamic
 VPATH = ./ ../common

@@ -44,7 +44,7 @@ ctlfile=test6.ctl  # choose control file from test1.ctl to test6.ctl
 
 
 #[6]##  homogeneous resisticity input, depth cuboid specification
-cat > test6.ctl <<EOF
+cat > change_cond.ctl <<EOF
 !------10!-------20!----
 input 3d mshfile   !./em3d.msh
 0homo,1cond,2model !0
@@ -58,5 +58,5 @@ minmax depth [km]  !  -50.3           0.1
 1  rho    [Ohm.m]  ! 10.0
 EOF
 
-${SRC}/change_model2cond.exe < test6.ctl
+${SRC}/change_model2cond.exe < change_cond.ctl
 #./gmtslice_change.sh

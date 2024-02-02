@@ -183,10 +183,12 @@ write(*,*) "iflag_velocity=",c_param%iflag_velocity ! 2017.10.26
   write(*,*) "Please enter Z header file"    ! 2021.12.02
   read(input,10) c_param%zpre(ilayer)        ! 2021.12.02
  end do                                      ! 2021.12.02
- write(*,*) "Please enter time interval for save COMCOT results" 
+ write(*,*) "Please enter time interval for save COMCOT data [sec]" 
  read(input,11) c_param%dt_comcot    
- write(*,*) "Please enter time interval for save COMCOT results"  ! 2024.01.19 TT
+ write(*,*) "c_param%dt_comcot",c_param%dt_comcot ! 2024.02.02
+ write(*,*) "Please enter time interval for COMCOT simulation [sec]"  ! 2024.01.19 TT
  read(input,11) c_param%dt_sim_comcot            ! 2024.01.19 TT
+ write(*,*) "c_param%dt_sim_comcot =",c_param%dt_sim_comcot ! 2024.02.02
  ! refer to line34 in output.f90 in comcotv1_7
  c_param%dt_comcot=c_param%dt_sim_comcot*NINT(c_param%dt_comcot/c_param%dt_sim_comcot)  ! 2024.01.19 TT
  !#[2-2]## analytical wave
@@ -369,6 +371,7 @@ end if
   read(input,12) g_cond%condflag  ! 0:homogeneous, 1:file
   write(*,*) "g_cond%condflag = ",g_cond%condflag                   ! 2024.02.01
   if (g_cond%condflag .eq. 0 ) then    ! nvolume homogeneous crust    2017.09.29
+   goto 100 ! temporary 2024.02.02 Takuto Minami
    write(*,*) "" ! 2020.09.29
    write(*,*) "<Input # of physical volumes in land region>"
    read(input,*) g_cond%nvolume ! # of physical volume in land, ! 11->* 2021.09.02
@@ -388,7 +391,7 @@ end if
    write(*,*) "no file and no nvolume condflag should be 0 or 1 : condflag=",g_cond%condflag!2024.02.01
   end if
 
-
+100 continue ! 2024.02.02
 98 continue ! 2018.08.30
 
 10 format(20x,a70)
@@ -396,7 +399,6 @@ end if
 12 format(20x,i10)
 13 format(20x,3g15.7)
 14 format(20x,2i10)
-15 format(20x,a10) ! 2018.08.30
 
 write(*,*) "## READPARAM END!! ###"
 return
