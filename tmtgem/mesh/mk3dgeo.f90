@@ -573,7 +573,7 @@ end subroutine premsh6_5
   else
     do i=nodeseageo+1,nodegeo ! land corner loop
      write(*,*) "i",i,"xyk(i,1:2)",xyk(i,1:2)
-     if ( abs(xyk(i,1) - xymax(1)) .lt 1.d-5 .and. abs( xyk(i,2) - xymax(2)) < 1.d-5 ) then ! north east corner is in land
+     if ( abs(xyk(i,1) - xymax(1)) < 1.d-5 .and. abs( xyk(i,2) - xymax(2)) < 1.d-5 ) then ! north east corner is in land
 	     is     = i
 	     istart = i
 	     write(*,*) "North east corner is in land !! is=",is
