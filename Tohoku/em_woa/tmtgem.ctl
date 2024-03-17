@@ -8,12 +8,16 @@ start time [sec]   |0.0
 time interval [sec]|5.0
 end time   [sec]   |300.0
 1:COMCOT,2:analytic|1
+0:cart,1:spherical |1
+# of layer         |1
 xgrid file         |../flow/layer01_x.dat
 ygrid file         |../flow/layer01_y.dat
 depth grid  file   |../flow/layer01.dat
 header for m file  |../flow/m_01_
 header for n file  |../flow/n_01_
+header for z file 1|../flow/z_01_
 t int COMCOT [sec] |5.0
+t int simuCOMCOT[s]|1.0
 1:vh,2:vz,3:vh+vz  |1
 0:IGRF,1:FIL,2:cons|2
 Fx:E,Fy:N,Fz:up[nT]|0.0            0.0            -35000.0
@@ -38,4 +42,5 @@ ocean cond [S/m]   |3.3
 crust cond [S/m]   |0.01
 1:no,2:ocecond file|2
 need woa csv file  |../../woa/woa13_decav81B0_C00an01.csv
+0:homo,1:file crust|0
 

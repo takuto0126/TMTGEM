@@ -10,10 +10,11 @@ implicit none
 contains
 !################################################################### setoceancond
 !# coded on 2018.11.13
-subroutine setoceancond(g_mesh,g_param,h_ocean) ! 2019.01.28
+subroutine setoceancond(g_mesh,g_param,h_ocean,h_cond) ! 2024.02.01
 implicit none
 type(mesh),            intent(inout)  :: g_mesh  ! m_mesh_type.f90
 type(param_forward),   intent(in)     :: g_param ! m_param.f90
+type(param_cond),      intent(in)     :: h_cond  ! m_param.f90 2024.02.01
 type(ocean_data),      intent(in)     :: h_ocean ! m_oceanFvxyz.f90 2019.01.28
 type(ocean_cond)                      :: g_cond ! 2019.01.27
 integer(4)                            :: ntet
@@ -54,6 +55,11 @@ type(ocean_cond) :: m_cond
   if ( igroup(i) .eq. 2 ) cmodel(i) = g_param%cond(2) ! default ocean cond [S/m]
   if ( igroup(i) .eq. 3 ) cmodel(i) = g_param%cond(3) ! solid earth conductivity
  end do
+ if ( h_cond%condflag == 1 ) then  ! 2024.02.01
+   do i= 1, h_cond%nphys2          ! 2024.02.01
+    cmodel(ntet - h_cond%nphys2 + i ) = h_cond%sigma(i) ! 2024.02.01
+   end do                          ! 2024.02.01
+ end if                            ! 2024.02.01
 
  !#[1]## set ocean2ntetptr
   ntet_ocean = 0
