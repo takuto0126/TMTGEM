@@ -680,7 +680,7 @@ real(8)    :: z1 ! [km] for depth of xy plane
    allocate(zobs(nobs) )
    !#[O-3]## modify zcoordinate of obs 1m beneath the seafloor
     iflag = 1 ! 0 : without vf_coeff, 1 : for getting vf_coeff
-    CALL PREPZOBS(obs_xy,em_mesh,ki_mesh,ki23dptr,g_param,iflag) ! 2021.07.26
+    CALL PREPZOBS(obs_xy,em_mesh,ki_mesh,nodek,ki23dptr,g_param,iflag) ! 2024.03.17
    end if
 
 !#[OPTION]## iflagspherical = 1  ##
