@@ -5,22 +5,22 @@ source tests/func.sh
 
 testMktopoChile(){
    mktopo Chile
-   assertEquals 1 $?
+   assertEquals 0 $?
 }
 
 testMeshgenChile(){
    meshgen Chile
-   assertEquals 1 $?
+   assertEquals 0 $?
 }
 
 testComcotChile(){
    runcomcot Chile
-   assertEquals 1 $?
+   assertEquals 0 $?
 }
 
 testTmtgemChile(){
    emrun Chile em A01
-   assertEquals 1 $?
+   assertEquals 0 $?
 }
 
 # load shunit2

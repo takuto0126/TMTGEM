@@ -6,7 +6,8 @@ mshki2ocean.ctl
 topo.xyz
 topo.grd 
 *.ps 
-*.gmt 
+*.gmt
+log.txt
 gmt.history 
 a.out
 *.sh
