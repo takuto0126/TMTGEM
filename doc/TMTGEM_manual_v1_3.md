@@ -469,7 +469,8 @@ Please send messages to takuto.minami126@gmail.com when you face any difficultie
 
 Given the governing equation,
 
-$$ \nabla \times \nabla \times \mathbf{A} + \mu \sigma \frac{\partial \mathbf{A}}{\partial t} = \mu \sigma (\mathbf{v} \times \mathbf{B}_0)$$ 
+$$ \nabla \times \nabla \times \mathbf{A} + \mu \sigma \frac{\partial \mathbf{A}}{\partial t} = \mu \sigma (\mathbf{v} \times \mathbf{B}_0)
+$$ 
 
 in the finite element method with the Galerkin method, we numerically solve
 
@@ -540,12 +541,10 @@ $$∑_{j=1}^6 \left[\int_{Ω_e}\frac{1}{L^2}\left( ∇'× \mathbf{w}'_i \right)\
 
 $$=∑_{j=1}^6 \frac{1}{2Δt} \left[∫_{Ω_e}\frac{1}{L^2} \mathbf{w}_i'\cdot \mathbf{w}'_j L^3 dV'\right]\frac{1}{L}\left(4[Al'_j]_{n+1}-[Al'_j]_n \right)$$
 
-$$+μσ_e ∑_{m=1}^4 \left[\int_{Ω_e}\frac{1}{L} \mathbf{w}_i' λ_m L^3 dV'\right]\cdot \left[\left[\frac{1}{L} v'\times\frac{1}{L}^3  B'_0\right]_m \right]_{n+2} $$
+$$+μσ_e ∑_{m=1}^4 \left[\int_{Ω_e}\frac{1}{L} \mathbf{w}_i' λ_m L^3 dV'\right]\cdot \left[\left(\frac{1}{L} \mathbf{v}'\times\frac{1}{L^3}  \mathbf{B}'_0 \right)_m \right]_{n+2} $$
 
-$$⟺∑_{j=1}^6\left[∫_{Ω_e}(∇'×\mathbf{w}_i' )⋅(∇'×\mathbf{w}_j')dV'+\frac{3μσ_e}{2Δt} L^2 ∫_{Ω_e}\mathbf{w}_i'⋅\mathbf{w}'_j dV'\right] [Al'_j]_{n+2}$$
+$$⟺∑_{j=1}^6\left[∫_{Ω_e}(∇'×\mathbf{w}_i' )⋅(∇'×\mathbf{w}_j')dV'+\frac{3μσ_e L^2}{2Δt}  ∫_{Ω_e}\mathbf{w}_i'⋅\mathbf{w}'_j dV'\right] [Al'_j]_{n+2}$$
 
-$$=∑_{j=1}^6\frac{L^2}{2Δt} \left[∫_{Ω_e}\mathbf{w}_i'\cdot \mathbf{w}'_j dV'\right](4[Al'_j]_{n+1}-[Al'_j]_n )$$
-
-$$+ \mu \sigma_e ∑_{m=1}^4 \left[\int_{Ω_e}\mathbf{w}_i' λ_m dV'\right]⋅[[v'×B_0']_m]_{n+2} $$
+$$=∑_{j=1}^6\frac{L^2}{2Δt} \left[∫_{Ω_e}\mathbf{w}_i'\cdot \mathbf{w}'_j dV'\right](4[Al'_j]_{n+1}-[Al'_j]_n )+ \mu \sigma_e ∑_{m=1}^4 \left[\int_{Ω_e}\mathbf{w}_i' λ_m dV'\right]⋅[[\mathbf{v}'×\mathbf{B}'_0]_m]_{n+2} $$
 
 
