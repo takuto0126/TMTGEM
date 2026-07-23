@@ -5,11 +5,11 @@ TEST_FLDR=${TMTGEM_HOME}/tests
 
 setUp(){
   export PATH=$PATH:/usr/local/bin
-  echo "setUp is called"
+  #echo "setUp is called"
 }
 
 tearDown(){
-   echo "tearDown is called"
+   #echo "tearDown is called"
    cd $TEST_FLDR
 }
 
