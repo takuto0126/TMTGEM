@@ -5,6 +5,7 @@
 mshki2ocean.ctl 
 topo.xyz
 topo.grd 
+*.txt
 *.ps 
 *.gmt 
 gmt.history 

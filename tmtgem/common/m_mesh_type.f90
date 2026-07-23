@@ -595,7 +595,7 @@ if (h_mesh%icoordinateflag .eq. 2) xyz(1:3,:)=h_mesh%lonlatalt(1:3,:)
 if (h_mesh%icoordinateflag .eq. 3) xyz(1:3,:)=h_mesh%xyzspherical(1:3,:)
 
 do i=1,h_mesh%node
- write(ifile,*) i, xyz(1:3,i)
+ write(ifile,3g15.7) i, xyz(1:3,i) ! 2026.07.23
 end do
 write(ifile,'(a)')"$EndNodes"
 return
