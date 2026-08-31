@@ -254,7 +254,7 @@ read(1,*) node
 write(2,*) node
 do i=1,node
 read(1,*) j,x1,y1,z1
-write(2,*) j,x1,y1,z(i)
+write(2,'(i10,3g15.7)') j,x1,y1,z(i)
 end do
 do while ( i .ge. 0)
 read(1,'(a80)',end=99) line

@@ -26,8 +26,8 @@ implicit none
 	nx  = h_grd%xygrid%nx
 	ny  = h_grd%xygrid%ny
 	allocate(lon(nx),lat(ny))
-	lon = h_grd%xygrid%xgrd
-	lat = h_grd%xygrid%ygrd
+	lon = h_grd%xygrid%xgrd_sphe ! [deg] xgrd -> xgrd_sphe 2021.12.08
+	lat = h_grd%xygrid%ygrd_sphe ! [deg] ygrd -> ygrd_sphe 2021.12.08
 	outputfolder = g_param%outbxyzfolder ! 2018.11.15
 	outfile = outputfolder(1:len_trim(outputfolder))//"geomag_IGRF.dat" ! 2018.11.15
 

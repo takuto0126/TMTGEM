@@ -1,21 +1,27 @@
---------10--------20--------------------
+--------10--------20-------------------- control file for TMTGEMv1.3
 1:err,2:fwd,3:both |2
 3d em mesh file    |../mesh/em3d.msh
 line info  file    |../mesh/lineinfo.dat
 mesh control file  |../mesh/mesh.ctl
 ocean mesh file    |../mesh/ocean.msh
 start time [sec]   |0.0
-time interval [sec]|5.0
+time interval [sec]|10.0
 end time   [sec]   |300.0
 1:COMCOT,2:analytic|1
 0:cart,1:spherical |1
-# of layer         |1
-xgrid file         |../flow/layer01_x.dat
-ygrid file         |../flow/layer01_y.dat
-depth grid  file   |../flow/layer01.dat
-header for m file  |../flow/m_01_
-header for n file  |../flow/n_01_
-header for z file 1|../flow/z_01_
+# of layer         |2
+xgrid file        1|../flow_2layer/layer01_x.dat
+ygrid file        1|../flow_2layer/layer01_y.dat
+depth file        1|../flow_2layer/layer01.dat
+header for m file 1|../flow_2layer/m_01_
+header for n file 1|../flow_2layer/n_01_
+header for z file 1|../flow_2layer/z_01_
+xgrid file        2|../flow_2layer/layer02_x.dat
+ygrid file        2|../flow_2layer/layer02_y.dat
+depth file        2|../flow_2layer/layer02.dat
+header for m file 2|../flow_2layer/m_02_
+header for n file 2|../flow_2layer/n_02_
+header for z file 2|../flow_2layer/z_02_
 t int saveCOMCOT[s]|5.0
 t int simuCOMCOT[s]|1.0
 1:vh,2:vz,3:vh+vz  |1
@@ -43,4 +49,3 @@ crust cond [S/m]   |0.01
 1:no,2:ocecond file|1
 0:homo,1:file crust|1
 condfile           |../mesh/cond_test.msh
-

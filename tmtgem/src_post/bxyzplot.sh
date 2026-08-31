@@ -7,7 +7,7 @@ export GMTHOME=/usr/lib/gmt
 bxyzfile="./bxyz/bxyz_xy2D"${1}".dat"
 t=`echo ${1} `
 echo ${t}
-vhfile="./vxyz/vh"${t}".dat"
+zfile="./vxyz/z"${t}".dat"
 echo $bxyzfile
 pos5file="../mesh/pos5.dat"
 topofile="../mesh/topo.xyz"
@@ -35,9 +35,9 @@ do i=1,nobs
 end do
 close(1)
 
-!#[2]## read vh
-open(1,file="${vhfile}")
-open(2,file="vh.dat")
+!#[2]## read wave height
+open(1,file="${zfile}")
+open(2,file="z.dat")
  do i=1,nobs
  read(1,*,end=98) a
  write(2,*) xy(1,i),xy(2,i),a
@@ -80,7 +80,7 @@ $FC tmp.f90
 #============ bzplot ===================
 
 grdf="bz.grd"
-grdvh="vh.grd"
+grdz="z.grd"
 grdtopo="topo.grd"
 
 width=600
@@ -92,12 +92,13 @@ gmt gmtset FONT_ANNOT_PRIMARY="14p,Helvetica,black"
 gmt gmtset FONT_LABEL="18p,Helvetica,black"
 
 gmt makecpt -Cpolar -T-18/18/0.05
-gmt blockmean "vh.dat"  -R$WESN -I3 |gmt surface -G$grdvh   -I3 -T0.2  -R$WESN
+gmt blockmean "z.dat"   -R$WESN -I3 |gmt surface -G$grdz    -I3 -T0.2  -R$WESN
 gmt blockmean "tmp.dat" -R$WESN -I3 |gmt surface -G$grdf    -I3 -T1    -R$WESN
 gmt blockmean $topofile -R$WESN -I3 |gmt surface -G$grdtopo -I2 -T1    -R$WESN
 gmt basemap  -Bxa100+l"Distance [km]" -Bya100+l"Distance [km]" -BWeSn -JX15/15 -R${WESN} -X3 -Y3
 gmt grdimage $grdf -C   
-gmt grdcontour $grdvh -C10 -L10/20 -W0.2
+gmt grdcontour $grdz -C0.5 -L0.1/10 -A1 -W0.2
+gmt grdcontour $grdz -C0.5 -L-10/-0.1 -A1 -W0.2,-
 gmt plot "$polygongmt"  -W1 -L              # coastline
 gmt plot "$pos5file" -L -W0.5
 gmt grdcontour $grdtopo -C1000 -L-8000/-7000 -W0.2,green # bathymetry contour
@@ -115,7 +116,7 @@ gmt end show
 
 #=========  plot end =======================
 
-rm $CPT a.out tmp.f90 vh.dat vh.grd tmp.dat
+rm $CPT a.out tmp.f90 z.dat z.grd tmp.dat
 rm $grdtopo
 rm $grdf
 

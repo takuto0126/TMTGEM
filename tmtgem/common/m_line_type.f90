@@ -54,7 +54,7 @@ subroutine MKLINE(l_line, nodeg, ntetg, n4) ! line_stack,line_item, nline genera
 implicit none
 type(line_info),intent(out) :: l_line
 integer(4),     intent(in)  :: nodeg, ntetg, n4(ntetg,4)
-integer(4),     parameter   :: maxnline=50000000
+integer(4),     parameter   :: maxnline=10000000
 integer(4)                  :: line_item_work(maxnline),line_stack(0:nodeg)
 integer(4)                  :: i,j,k,l,n1,n2,nline,icount,n1o,n2o
 

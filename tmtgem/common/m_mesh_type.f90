@@ -30,6 +30,8 @@ type mesh
  integer(4)                          :: nmodel     ! 2018.11.14
  integer(4),allocatable,dimension(:) :: iele2model ! i-th ele corresponds to iele2model(i)-th model field
  real(8),   allocatable,dimension(:) :: cmodel     ! conductivity for i-th field
+
+ real(8),dimension(6) :: xyzminmax ! added 2024.02.01
 end type
 
 type list_type

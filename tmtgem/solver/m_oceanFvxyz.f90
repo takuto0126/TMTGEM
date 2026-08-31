@@ -22,6 +22,7 @@ type ocean_data
  integer(4),allocatable,dimension(:)   :: em2oceanptr ! [node]  node id in 3-D ocean mesh
  real(8),   allocatable,dimension(:,:) :: Fxyz ! (3,npoints_in_ocean) 2021.06.24
  real(8),   allocatable,dimension(:,:) :: vxyz ! (3,npoints_in_ocean) 2021.06.24
+ real(8),   allocatable,dimension(:)   :: z_tri! z_tri(IPL) 2021.12.08 wave height
  !# for div error 2017.11.02
  integer(4)            :: ntets            ! number of ocean elements         2017.11.02
  integer(4)            :: ntris            ! number of surface triangles      2017.11.02
@@ -30,17 +31,24 @@ type ocean_data
 end type ocean_data
 
 type comcot_data
- type(grid_data_2D)  :: h_grd  ! see m_FROMCOMCOT.f90
+ integer(4)          :: iflag_comcot_spherical ! comcot is conducted by 0:cartesian, 1:spherical 2021.12.08
+ integer(4)          :: nlayer ! # of layers of nested grid 2021.12.02
  integer(4)          :: IPL
- integer(4)          :: nx,ny
+ integer(4)          :: nodes  ! # of ocean nodes in 3-D mesh
+ !# time step info             !      2021.12.02
+ integer(4)          :: it_vxyz1, it_vxyz2
+ real(8)             :: t_vxyz1,   t_vxyz2
+ real(8),   allocatable, dimension(:,:) :: vxyz1,vxyz2   ! layer integrated velocity for nodes
+ real(8),   allocatable, dimension(:)   :: z_tri1,z_tri2 ! layer integrated z for IPL 2021.12.08
+ type(layer_data),allocatable,dimension(:)   :: layer  ! # of comcot layers 2021.12.06
+end type comcot_data
+
+type layer_data                ! 2021.12.06
+ integer(4)         :: nx,ny
+ type(grid_data_2D) :: h_grd !(nlayer) see m_FROMCOMCOT.f90 2021.12.02
  integer(4),allocatable, dimension(:,:) :: ivxyzflagkl  !inserted on Oct. 25, 2015
  real(8),   allocatable, dimension(:,:) :: vxyzcoef     !inserted on Oct. 25, 2015
- integer(4) :: it_vxyz1, it_vxyz2
- real(8)    :: t_vxyz1,   t_vxyz2
- integer(4) :: nodes
- real(8),allocatable,dimension(:,:)     :: vxyz1,vxyz2
-
-end type comcot_data
+end type layer_data
 
 contains
 
@@ -213,24 +221,32 @@ type(param_forward),intent(in)        :: g_param
 type(meshpara),     intent(in)        :: g_meshpara
 integer(4),         intent(in)        :: it
 real(8),            intent(in)        :: dt
-type(ocean_data),   intent(inout)     :: h_ocean  ! include vxyz
+type(ocean_data),   intent(inout)     :: h_ocean  ! include vxyz,z_tri ! z_tri added 2021.12.08
 type(comcot_data),  intent(inout)     :: h_comcot
-type(grid_data_2D)                    :: vxyh_grd
+type(grid_data_2D),allocatable,dimension(:)  :: vxyh_grd ! 2021.12.02
+type(grid_data_2D),allocatable,dimension(:)  ::    z_grd ! 2021.12.02
 integer(4)                            :: iflag_velocity, nodes
 integer(4),allocatable,dimension(:)   :: ocean2emptr
 real(8),   allocatable,dimension(:,:) :: vxyz1, vxyz2
+real(8),   allocatable,dimension(:)   :: z_tri1,z_tri2 ! sea surface elevation 2021.12.08
 real(8)    :: t  ! [sec]
 real(8)    :: dt_vxyz ![sec]
 real(8)    :: r,r1
-integer(4) :: it_vxyz1, it_vxyz2, i
+integer(4) :: it_vxyz1, it_vxyz2, i,IPL,ii ! 2021.12.08 IPL is added
+integer(4) :: nlayer,nx,ny                    ! 2021.12.02
 real(8)    :: t_vxyz1, t_vxyz2
 
 !#[0]## set input
   iflag_velocity = g_param%iflag_velocity
   nodes          = h_ocean%nodes
-  allocate(ocean2emptr(nodes))
-  allocate(vxyz1(3,nodes),vxyz2(3,nodes))
+  IPL            = h_ocean%IPL
+  allocate( ocean2emptr(nodes))
+  allocate( vxyz1(3,nodes),vxyz2(3,nodes))
+  allocate( z_tri1(IPL), z_tri2(IPL) )           ! 2021.12.08
   ocean2emptr    = h_ocean%ocean2emptr
+  nlayer         = g_param%nlayer  ! 2021.12.02
+  allocate( vxyh_grd(nlayer) )     ! 2021.12.02
+  allocate(    z_grd(nlayer) )     ! 2021.12.02
 
 !### for vxyz
 
@@ -239,15 +255,17 @@ real(8)    :: t_vxyz1, t_vxyz2
 
   !#[1-1]## coefficient preparation for COMCOT files (before it iterations)
   if      ( it .eq. 0 ) then
-     call gencomcotcoef(h_ocean,em_mesh,g_param,g_meshpara,h_comcot)
+     call gencomcotcoef(h_ocean,em_mesh,g_param,g_meshpara,h_comcot) ! see below
 
      !# initialize h_comcot
      h_comcot%t_vxyz1  = 0.d0
      h_comcot%t_vxyz2  = 0.d0
      h_comcot%it_vxyz1 = 0      ! it_vxyz1 start with 0
      h_comcot%it_vxyz2 = 0      ! it_vxyz2 start with 0
-     h_comcot%vxyz1    = 0.d0
-     h_comcot%vxyz2    = 0.d0
+     h_comcot%vxyz1    = 0.d0   ! comcot layer integrated velocity for nodes
+     h_comcot%vxyz2    = 0.d0   ! comcot layer integrated velocity for nodes
+     h_comcot%z_tri1   = 0.d0   ! layer integrated surface displacement for IPL 2021.12.08
+     h_comcot%z_tri2   = 0.d0   ! layer integrated surface displacement for IPL 2021.12.08
 
   !#[1-2]## calculation of vxyz from COMCOT files
   else if ( it .ge. 1 ) then
@@ -261,7 +279,13 @@ real(8)    :: t_vxyz1, t_vxyz2
      dt_vxyz   = g_param%dt_comcot
         vxyz1  = h_comcot%vxyz1
         vxyz2  = h_comcot%vxyz2
-     CALL ALLOCATEGRDDATA(vxyh_grd,h_comcot%h_grd%xygrid,2)
+        z_tri1 = h_comcot%z_tri1 ! 2021.12.08
+        z_tri2 = h_comcot%z_tri2 ! 2021.12.08
+
+     do i=1,nlayer ! 2021.12.02 layer loop
+      CALL ALLOCATEGRDDATA(vxyh_grd(i),h_comcot%layer(i)%h_grd%xygrid,2)! z_grd is added
+      CALL ALLOCATEGRDDATA(   z_grd(i),h_comcot%layer(i)%h_grd%xygrid,1)! z_grd is added
+     end do
 
      !#[1-2-2]## cal vxyz
      if ( t_vxyz2 .lt. t) then
@@ -277,17 +301,34 @@ real(8)    :: t_vxyz1, t_vxyz2
 
       !# after it gets t_vxyz1 < t <= t_vxyz2
       
-	vxyz1(:,:) = vxyz2(:,:)                   ! renew vxyz1
-      CALL READMN(it_vxyz2, vxyh_grd, g_param)  ! renew vxyz2 see FROMCOMCOT.f90
-!      write(*,*) "check4"
-      CALL CALOCEANVXYZ(vxyh_grd,h_comcot%h_grd,h_ocean,h_comcot,em_mesh,g_meshpara,vxyz2)
-!      write(*,*) "check5"
+	 vxyz1(:,:) = vxyz2(:,:)                   ! renew vxyz1
+      z_tri1(:)  = z_tri2(:)                    ! renew z      2021.12.08
+      CALL READMN(it_vxyz2,vxyh_grd,z_grd,g_param)!get vxyh_grd,z_grd, see m_FROMCOMCOT.f90 2021.12.06
+
+!       write(*,*) "size(vxyh_grd(1)%dat(1,:,:))",size(vxyh_grd(1)%dat(1,:,:))
+!       nx=vxyh_grd(1)%xygrid%nx
+!       ny=vxyh_grd(1)%xygrid%ny
+!       write(*,*) "nx,ny",nx,ny
+!       call countnonzero3( vxyh_grd(1)%dat(1:2,:,:),2,nx,ny,ii)
+!       write(*,*) "vxyz_grd(1)%dat(1:2,:,:) count",ii
+!       call countnonzero3(    z_grd(1)%dat,1,nx,ny,ii)
+!       write(*,*) "z_grd(1)%dat(1:1,:,:) count",ii
+
+      CALL CALOCEANVXYZ(vxyh_grd,z_grd,h_ocean,h_comcot,em_mesh,g_meshpara,vxyz2,z_tri2) !2021.12.08 z_tri added
+!      call countnonzero1( z_tri2,IPL,ii)
+!      write(*,*) "z_tri2(1:IPL) count",ii
+!      call countnonzero2( vxyz2,3,nodes,ii)
+!      write(*,*) "vxyz2(1:3,nodes) count",ii
+
      end if
      r  = ( t - t_vxyz1)/(t_vxyz2 - t_vxyz1)
      r1 = 1.d0 -r
      do i=1,nodes
       h_ocean%vxyz(1:3,i) = r1*vxyz1(1:3,i) + r * vxyz2(1:3,i)
      end do
+     do i=1,IPL  ! 2021.12.08
+      h_ocean%z_tri(   i) = r1*z_tri1(i)    + r * z_tri2(   i) ! 2021.12.08
+     end do      ! 2021.12.08
 
      !#[1-2-3]## select components of seawater velocity, 2017.07.04
      if (g_param%iflag_vF .eq. 1) then ! only vh
@@ -310,6 +351,8 @@ real(8)    :: t_vxyz1, t_vxyz2
      h_comcot%it_vxyz2 = it_vxyz2
      h_comcot%vxyz1    = vxyz1
      h_comcot%vxyz2    = vxyz2
+     h_comcot%z_tri1   = z_tri1 ! 2021.12.08
+     h_comcot%z_tri2   = z_tri2 ! 2021.12.08
 
   end if
 
@@ -325,6 +368,66 @@ real(8)    :: t_vxyz1, t_vxyz2
 
 return
 end
+!################################################
+! 2021.12.08
+subroutine countnonzeroint2(array,n,m,ii)
+implicit none
+integer(4), intent(in)  :: n,m
+integer(4), intent(in)  :: array(n,m)
+integer(4), intent(out) :: ii
+integer(4)              :: i,j,k
+ii=0
+do j=1,m;do i=1,n
+if ( array(i,j) .ne. 0 ) ii=ii+1
+end do;end do
+return
+end
+
+!################################################
+! 2021.12.08
+subroutine countnonzero3(array,idim,n,m,ii)
+implicit none
+integer(4), intent(in)  :: n,m,idim
+real(8),    intent(in)  :: array(idim,n,m)
+integer(4), intent(out) :: ii
+integer(4)              :: i,j,k
+real(8)                 :: threshold=1.d-5
+ii=0
+do j=1,m;do i=1,n;do k=1,idim
+if ( abs(array(k,i,j)) .gt. threshold ) ii=ii+1
+end do;end do;end do
+return
+end
+!################################################
+! 2021.12.08
+subroutine countnonzero2(array,n,m,ii)
+implicit none
+integer(4), intent(in)  :: n,m
+real(8),    intent(in)  :: array(n,m)
+integer(4), intent(out) :: ii
+integer(4)              :: i,j,k
+real(8)                 :: threshold=1.d-5
+ii=0
+do j=1,m;do i=1,n
+if ( abs(array(i,j)) .gt. threshold ) ii=ii+1
+end do;end do
+return
+end
+!################################################
+! 2021.12.08
+subroutine countnonzero1(array,m,ii)
+implicit none
+integer(4), intent(in)  :: m
+real(8),    intent(in)  :: array(m)
+integer(4), intent(out) :: ii
+integer(4)              :: i,j,k
+real(8)                 :: threshold=1.d-5
+ii=0
+do j=1,m
+if ( abs(array(j)) .gt. threshold ) ii=ii+1
+end do
+return
+end
 !########################################## calcoeffcomcot
 subroutine gencomcotcoef(h_ocean,em_mesh,g_param,g_meshpara,h_comcot)
 implicit none
@@ -333,44 +436,66 @@ type(param_forward),intent(in)    :: g_param
 type(meshpara),     intent(in)    :: g_meshpara
 type(ocean_data),   intent(in)    :: h_ocean
 type(comcot_data),  intent(out)   :: h_comcot
-type(grid_xy)      :: xygrid
-type(grid_data_2D) :: h_grd,vxyh_grd
-character(70)      :: xgrdfile, ygrdfile,hfile
-integer(4)         :: ivxyzflagkl(h_ocean%IPL,3),nodes,IPL
-real(8)            :: vxyzcoef(h_ocean%IPL,2)
+type(grid_xy),      allocatable,dimension(:) :: xygrid ! 2021.12.02
+type(grid_data_2D), allocatable,dimension(:) :: vxyh_grd,h_grd ! 2021.12.02
+character(70),      allocatable,dimension(:) :: xgrdfile, ygrdfile,hfile
+integer(4)         :: nodes,IPL! IPL is the numver of surface ocean nodes
+integer(4)         :: nlayer,i,j ! # of COMCOT layer 2021.12.02
+integer(4),allocatable, dimension(:,:,:) :: ivxyzflagkl  !2021.12.08
+real(8),   allocatable, dimension(:,:,:) :: vxyzcoef     !2021.12.08
 
 !#[0]## set input
- xgrdfile = g_param%xgrdfile_v
- ygrdfile = g_param%ygrdfile_v
- hfile    = g_param%hgrdfile
- IPL      = em_mesh%npoi
- nodes    = h_ocean%nodes
+ IPL       = em_mesh%npoi
+ nodes     = h_ocean%nodes
+ nlayer    = g_param%nlayer         ! 2021.12.02
+ allocate( vxyh_grd(nlayer) )       ! 2021.12.08
+ allocate(    h_grd(nlayer) )       ! 2021.12.08
+ allocate( xgrdfile(nlayer) )       ! 2021.12.02
+ allocate( ygrdfile(nlayer) )       ! 2021.12.02
+ allocate( hfile(   nlayer) )       ! 2021.12.02
+ allocate( xygrid(  nlayer) )       ! 2021.12.08
+ xgrdfile(1:nlayer) = g_param%xgrdfile_v(1:nlayer)
+ ygrdfile(1:nlayer) = g_param%ygrdfile_v(1:nlayer)
+ hfile(   1:nlayer) = g_param%hgrdfile(  1:nlayer)
+ allocate( ivxyzflagkl(IPL,3,nlayer)) ! 2021.12.08
+ allocate( vxyzcoef(IPL,2,nlayer))    ! 2021.12.08
 
-!#[1]## read COMCOT grid data and Fx, Fy, Fz, added on Oct. 25, 2015
- CALL COUNTCOMCOT(xygrid,xgrdfile, ygrdfile)   ! get nx, ny  < FROMCOMCOT.f90
- CALL READCOMCOTGRD(xygrid, xgrdfile, ygrdfile) ! get xygrid%xgrd and ygrd
+ do i =1,nlayer  ! 2021.12.02
+  !#[0]## read COMCOT grid data and Fx, Fy, Fz, added on Oct. 25, 2015
+  CALL COUNTCOMCOT(  xygrid(i), xgrdfile(i), ygrdfile(i)) ! get nx, ny  < FROMCOMCOT.f90 2021.12.08
+  CALL READCOMCOTGRD(xygrid(i), xgrdfile(i), ygrdfile(i),g_param,g_meshpara) ! 2021.12.08
 
-!#[2]## allocate vxyh_grd and h_grd
- CALL ALLOCATEGRDDATA(vxyh_grd, xygrid,2)       ! see FROMCOMCOT.f90
- CALL ALLOCATEGRDDATA(h_grd   , xygrid,1)
- CALL READGRDDATA(hfile,h_grd,1) !see FROMCOMCOT.f90
+  !#[2]## allocate vxyh_grd and h_grd
+  CALL ALLOCATEGRDDATA(   vxyh_grd(i), xygrid(i),2)  ! 2021.12.02     ! see FROMCOMCOT.f90
+  CALL ALLOCATEGRDDATA(      h_grd(i), xygrid(i),1)  ! 2021.12.02
+  CALL READGRDDATA(hfile(i), h_grd(i), 1)  ! 2021.12.02 see FROMCOMCOT.f90
 
-!#[3]##
- CALL MKVXYZCOEF(xygrid,h_ocean,em_mesh,g_meshpara,ivxyzflagkl,vxyzcoef) ! see FROMCOMCOT.f90
+  !#[3]##
+  CALL MKVXYZCOEF(xygrid(i),h_ocean,em_mesh,ivxyzflagkl(:,:,i),vxyzcoef(:,:,i)) ! see FROMCOMCOT.f90
+ end do
 
 !#[4]## set h_comcot
- CALL ALLOCATEGRDDATA(h_comcot%h_grd,xygrid,1)
- h_comcot%h_grd = h_grd
- allocate(h_comcot%ivxyzflagkl(IPL,3))
- allocate(h_comcot%vxyzcoef(IPL,2))
- h_comcot%IPL = IPL
- h_comcot%ivxyzflagkl = ivxyzflagkl
- h_comcot%vxyzcoef    = vxyzcoef
- h_comcot%nodes       = nodes
+ !# general info 2021.12.06
+ h_comcot%iflag_comcot_spherical = g_param%iflag_comcot_spherical ! 2021.12.08
+ h_comcot%IPL            = IPL     ! # of nodes at the sea surface
+ h_comcot%nodes          = nodes
  allocate(h_comcot%vxyz1(3,nodes))
  allocate(h_comcot%vxyz2(3,nodes))
- h_comcot%nx  = xygrid%nx
- h_comcot%ny  = xygrid%ny
+ allocate(h_comcot%z_tri1(IPL)   ) ! 2021.12.08
+ allocate(h_comcot%z_tri2(IPL)   ) ! 2021.12.08
+ h_comcot%nlayer         = nlayer          ! 2021.12.02
+ !# layer info
+ allocate(h_comcot%layer(nlayer))          ! 2021.12.02
+ do i=1,nlayer
+  h_comcot%layer(i)%nx             = xygrid(i)%nx
+  h_comcot%layer(i)%ny             = xygrid(i)%ny
+  CALL ALLOCATEGRDDATA(h_comcot%layer(i)%h_grd,xygrid(i),1) ! 2021.12.02
+  h_comcot%layer(i)%h_grd          = h_grd(i) ! 2021.12.02
+  allocate(h_comcot%layer(i)%ivxyzflagkl(IPL,3))
+  allocate(h_comcot%layer(i)%vxyzcoef(   IPL,2))
+  h_comcot%layer(i)%ivxyzflagkl(:,:) = ivxyzflagkl(:,:,i)
+  h_comcot%layer(i)%vxyzcoef(:,:)    = vxyzcoef(:,:,i)
+ end do
 
  write(*,*) "### GENCOMCOTCOEF END!! ###"
 return
@@ -397,7 +522,7 @@ end
 
 !#[2]## read grid
  CALL COUNTCOMCOT(xygrid, xgrdfile, ygrdfile)   ! get nx, ny  <
- CALL READCOMCOTGRD(xygrid, xgrdfile, ygrdfile) ! get xygrid%xgrd, ygrd
+ CALL READCOMCOTGRD(xygrid,xgrdfile,ygrdfile,g_param,g_meshpara) !2021.12.08
 
 !#[3]## allocate grid data
  CALL ALLOCATEGRDDATA(Fxyz_grd, xygrid, 3)
@@ -408,7 +533,7 @@ end
  Fxyz_grd%dat(3,:,:) = - h_grd%dat(3,:,:) ! upward    [nT]
 
 !#[4]## calculate coefficient of ivxyzflagkl and vxyzcoef
- CALL MKVXYZCOEF(xygrid,h_ocean,em_mesh,g_meshpara,ivxyzflagkl,vxyzcoef) ! see FROMCOMCOT.f90
+ CALL MKVXYZCOEF(xygrid,h_ocean,em_mesh,ivxyzflagkl,vxyzcoef) ! see FROMCOMCOT.f90
 
 !#[5]## FXYZ is created
  CALL CALOCEANFXYZ(Fxyz_grd,h_ocean,ivxyzflagkl,vxyzcoef) ! cal h_ocean%Fxyz
@@ -435,7 +560,7 @@ real(8)            :: vxyzcoef(h_ocean%IPL,2)
 
 !#[2]## read grid
  CALL COUNTCOMCOT(xygrid, xgrdfile, ygrdfile)   ! get nx, ny  <
- CALL READCOMCOTGRD(xygrid, xgrdfile, ygrdfile) ! get xygrid%xgrd, ygrd
+CALL READCOMCOTGRD(xygrid, xgrdfile, ygrdfile,g_param,g_meshpara) !2021.12.08
 
 !#[3]## allocate grid data
  CALL ALLOCATEGRDDATA(Fxyz_grd, xygrid, 3)
@@ -446,7 +571,7 @@ real(8)            :: vxyzcoef(h_ocean%IPL,2)
  Fxyz_grd%dat(3,:,:) = - h_grd%dat(3,:,:) ! upward    [nT]
 
 !#[4]## calculate coefficient of ivxyzflagkl and vxyzcoef
- CALL MKVXYZCOEF(xygrid,h_ocean,em_mesh,g_meshpara,ivxyzflagkl,vxyzcoef) ! see FROMCOMCOT.f90
+ CALL MKVXYZCOEF(xygrid,h_ocean,em_mesh,ivxyzflagkl,vxyzcoef) ! see below
 
 !#[5]## FXYZ is created
  CALL CALOCEANFXYZ(Fxyz_grd,h_ocean,ivxyzflagkl,vxyzcoef) ! cal h_ocean%Fxyz
@@ -454,49 +579,39 @@ real(8)            :: vxyzcoef(h_ocean%IPL,2)
 return
 end
 !########################################   MKVXYZCOEF
-subroutine MKVXYZCOEF(xygrid,h_ocean,em_mesh,g_meshpara, ivxyzflagkl, vxyzcoef)
+subroutine MKVXYZCOEF(xygrid,h_ocean,em_mesh,ivxyzflagkl, vxyzcoef)
 implicit none
-type(ocean_data),intent(in) :: h_ocean
-type(mesh),      intent(in) :: em_mesh
-type(grid_xy),   intent(in) :: xygrid
-type(meshpara),  intent(in) :: g_meshpara
-real(8),        intent(out) :: vxyzcoef(h_ocean%IPL,2)
-integer(4),     intent(out) :: ivxyzflagkl(h_ocean%IPL,3)
+type(ocean_data),intent(in)    :: h_ocean
+type(mesh),      intent(in)    :: em_mesh
+type(grid_xy),   intent(in)    :: xygrid       ! 2021.12.06
+real(8),         intent(out)   :: vxyzcoef(h_ocean%IPL,2)
+integer(4),      intent(out)   :: ivxyzflagkl(h_ocean%IPL,3)
 !#   vxycoef(nodes,1:2) =[ A , B ]
 !#   ivxyzflagkl(nodes,1) =0 : v=0, 1 : v can be provided
 !#   ivxyzflagkl(nodes,2) =kset  ;  xgrd(kset) < x < xgrd(kset+1)
 !#   ivxyzflagkl(nodes,3) =lset  ;  ygrd(lset) <  y  < ygrd(lset+1)
-integer(4) :: IPL
-integer(4),allocatable,dimension(:) :: surfptr
-real(8),allocatable,dimension(:,:)  :: xyzg  ! coordinates of em3d.msh
-real(8)    :: lonorigin, latorigin, x1,y1, A, B
-integer(4) :: i,j, npoint, k, l, kset, lset, nx,ny
-real(8),allocatable,dimension(:)  :: xgrd, ygrd, xx, yy
+integer(4)                             :: IPL
+integer(4),allocatable,dimension(:)    :: surfptr
+real(8),   allocatable,dimension(:,:)  :: xyzg  ! coordinates of em3d.msh
+real(8),   allocatable,dimension(:)    :: xx, yy
+real(8)                                :: x1,y1, A, B
+integer(4)                             :: i,j, npoint, k, l, kset, lset, nx,ny
 
 !#[0]## set input
-IPL       = h_ocean%IPL
+IPL       = h_ocean%IPL    ! nuber of ocean surface nodes
 allocate(surfptr(IPL),xyzg(3,em_mesh%node))
 surfptr   = h_ocean%surfptr
 xyzg      = em_mesh%xyz
-lonorigin = g_meshpara%lonorigin
-latorigin = g_meshpara%latorigin
 nx        = xygrid%nx
 ny        = xygrid%ny
-allocate(xgrd(nx),ygrd(ny),xx(nx),yy(ny))
-xgrd      = xygrid%xgrd
-ygrd      = xygrid%ygrd
-
-!#[1]# convert xgrd [deg] to xx[km]
-write(*,*) "check1"
-do i=1,nx
-  xx(i)=(xgrd(i)-lonorigin)*d2r*earthrad*dcos(latorigin*d2r)
-end do
-do j=1,ny
-  yy(j)=(ygrd(j)-latorigin)*d2r*earthrad
-end do
+allocate( xx(nx),yy(ny)) ! 2021.12.08
+xx        = xygrid%xgrd    ! 2021.12.08
+yy        = xygrid%ygrd    ! 2021.12.08
+!do i=1,nx
+!write(*,*) "nx,i,xx,yy",i,xx(i),yy(i)
+!end do
 
 !#[1]# surface node loop start
-write(*,*) "check2"
 ivxyzflagkl(1:IPL,1:3)=0
 vxyzcoef(1:IPL,1:2)=0.d0
 do i=1,IPL
@@ -511,8 +626,8 @@ do i=1,IPL
   do k=1,nx-1
     if ( xx(k) .lt. x1 .and. x1 .le. xx(k+1) ) then
       kset=k
-	A=(xx(k+1) - x1)/ ( xx(k+1) - xx(k) )  ! coeff for values at x(kset)
-	goto 10
+	 A=(xx(k+1) - x1)/ ( xx(k+1) - xx(k) )  ! coeff for values at x(kset)
+	 goto 10
     end if
   end do
   goto 200  ! kset not found
@@ -521,8 +636,8 @@ do i=1,IPL
   do l=1,ny-1
     if ( yy(l) .lt. y1 .and. y1 .le. yy(l+1) ) then
       lset=l
-	B=(yy(l+1) - y1)/ (yy(l+1) - yy(l) ) ! coeff for values at y(lset)
-	goto 20
+	 B=(yy(l+1) - y1)/ (yy(l+1) - yy(l) ) ! coeff for values at y(lset)
+	 goto 20
     end if
   end do
   goto 200  ! lset not found
@@ -538,61 +653,77 @@ write(*,*) "### MKVXYZCOEF END!! ###"
 return
 end
 !###################################################### CALOCEANVXYZ
-subroutine CALOCEANVXYZ(vxyh_grd,h_grd,h_ocean,h_comcot,em_mesh,g_meshpara, vxyz)
+subroutine CALOCEANVXYZ(vxyh_grd,z_grd,h_ocean,h_comcot,em_mesh,g_meshpara,vxyz,z_tri)!2021.12.08
 implicit none
-type(grid_data_2D),       intent(in)  :: vxyh_grd,h_grd
 type(ocean_data),         intent(in)  :: h_ocean
 type(comcot_data),        intent(in)  :: h_comcot
 type(mesh),               intent(in)  :: em_mesh
 type(meshpara),           intent(in)  :: g_meshpara
-real(8),                  intent(out) :: vxyz(3,h_comcot%nodes)! vx, vy, vz at nodes in ocean
+type(grid_data_2D),       intent(in)  :: vxyh_grd(h_comcot%nlayer) ! 2021.12.06
+type(grid_data_2D),       intent(in)  :: z_grd(   h_comcot%nlayer) ! 2021.12.06
+real(8),                  intent(out) :: z_tri(h_ocean%IPL)   ! 2021.12.08
+real(8),                  intent(out) :: vxyz(3,h_ocean%nodes)! vx, vy, vz at nodes in ocean
+type(grid_data_2D),allocatable,dimension(:) :: h_grd               ! 2021.12.06
 integer(4),allocatable,dimension(:,:) :: ivxyzflagkl
 integer(4),allocatable,dimension(:)   :: surfptr, nz
 real(8),   allocatable,dimension(:,:) :: vxyzcoef
 real(8),   allocatable,dimension(:)   :: xgrd, ygrd ! vx,vy,vz on comcot grid
-real(8),   allocatable,dimension(:,:) :: vx, vy, vz, vxh, vyh, h
-integer(4) :: IPL, nodes
+real(8),   allocatable,dimension(:,:) :: vx, vy, vz, vxh, vyh, h,z ! 2021.12.08 z added
+integer(4) :: IPL, nodes,nlayer,ilayer ! 2021.12.08 nlayer is added
 real(8)    :: latorigin, lonorigin
 real(8),allocatable,dimension(:,:) :: xyz
-real(8)    ::  vx1, vy1, vz1, A,B, A1, B1, h0, dx,dy
+real(8)    ::  vx1, vy1, vz1, A,B, A1, B1, h0, dx,dy,z1
 integer(4) :: i,j, icount, k,l, ii
 integer(4) :: nx,ny
 
 !#[0]# set input
-IPL     = h_comcot%IPL
+IPL         = h_comcot%IPL
 allocate(ivxyzflagkl(IPL,3),surfptr(IPL), nz(IPL),vxyzcoef(IPL,2))
 allocate(xyz(3,em_mesh%node))
-ivxyzflagkl = h_comcot%ivxyzflagkl
-vxyzcoef    = h_comcot%vxyzcoef
 latorigin   = g_meshpara%latorigin
 lonorigin   = g_meshpara%lonorigin
-surfptr = h_ocean%surfptr
-nz      = h_ocean%nz
-nodes   = h_ocean%nodes
-xyz     = em_mesh%xyz
-nx      = h_comcot%nx
-ny      = h_comcot%ny
-allocate(xgrd(nx), ygrd(ny),vx(nx,ny), vy(nx,ny), vz(nx,ny) )
-allocate(vxh(nx,ny), vyh(nx,ny), h(nx,ny))
-xgrd    = h_grd%xygrid%xgrd(:)
-ygrd    = h_grd%xygrid%ygrd(:)
-vxh     = vxyh_grd%dat(1,:,:)
-vyh     = vxyh_grd%dat(2,:,:)
-h       = h_grd%dat(1,:,:)    ! [m]
-vx(:,:)=0.d0
-vy(:,:)=0.d0
-vz(:,:)=0.d0
+surfptr     = h_ocean%surfptr
+nz          = h_ocean%nz
+nodes       = h_ocean%nodes
+xyz         = em_mesh%xyz
+nlayer      = h_comcot%nlayer          ! 2021.12.06
+vxyz  =0.d0  ! 2021.12.09
+z_tri=0.d0 ! 2021.12.09
+
+do ilayer = 1, nlayer ! 2021.12.07
+
+ ivxyzflagkl = h_comcot%layer(ilayer)%ivxyzflagkl
+ vxyzcoef    = h_comcot%layer(ilayer)%vxyzcoef
+ nx          = h_comcot%layer(ilayer)%nx
+ ny          = h_comcot%layer(ilayer)%ny
+ allocate(xgrd(nx), ygrd(ny),vx(nx,ny), vy(nx,ny), vz(nx,ny))
+ allocate(z(nx,ny)) ! 2021.12.08
+ allocate(vxh(nx,ny), vyh(nx,ny), h(nx,ny))
+ xgrd        = h_comcot%layer(ilayer)%h_grd%xygrid%xgrd(:)
+ ygrd        = h_comcot%layer(ilayer)%h_grd%xygrid%ygrd(:)
+ vxh         = vxyh_grd(ilayer)%dat(1,:,:)
+ vyh         = vxyh_grd(ilayer)%dat(2,:,:)
+ h           = h_comcot%layer(ilayer)%h_grd%dat(1,:,:)    ! [m]
+ z           = z_grd(ilayer)%dat(1,:,:) ! 2021.12.08
+ vx(:,:)=0.d0
+ vy(:,:)=0.d0
+ vz(:,:)=0.d0
 
 !write(*,*) "CALOCEANVXYZ check 1"
 !#[1]## cal vx, vy, vz (z=0)
 !write(*,*) "check1"
 dy=(ygrd(2) - ygrd(1))*d2r*earthrad
+!open(30,file="tmp.dat")
 do j=2, ny
   do i=2,nx
     if ( h(i,j) .le. 0.d0 ) goto 110 ! 2018.11.14 neglect the water velocity on land
     dx=(xgrd(i) - xgrd(i-1))*d2r*earthrad*dcos(latorigin*d2r)  ! vxh, vyh [ m/s * m ]
-    vx(i,j)=  (vxh(i,j)+vxh(i-1,j))/2.d0/(h(i,j)*1.d-3)    ![m/s *m /km] = [mm/s]
-    vy(i,j)=  (vyh(i,j)+vyh(i,j-1))/2.d0/(h(i,j)*1.d-3)     ![m/s *m /km] = [mm/s]
+    ! Note in COMCOT that M(I,J)=P(I,J)=P_{i+1/2,j}, Q(I,J)=N(I,J)=Q_{i,j+1/2} 2021.12.08 see l.450 in moment.f90
+    ! free surface displacement z(i,j)=eta_{i,j}, and ocean depth h(i,j) = H_{i,j} ! 2021.12.08
+    !write(30,*) vxh(i,j), vxh(i-1,j), z(i,j), h(i,j), i, j, nx, ny
+    if (abs(z(i,j)+h(i,j)) .lt. 1.d-4) go to 110  !1.d-4[km]  2024.01.23 TT
+    vx(i,j)=  (vxh(i,j)+vxh(i-1,j))/2.d0/((z(i,j)+h(i,j))*1.d-3)    ![m/s *m /km] = [mm/s] ! z added 2021.12.08
+    vy(i,j)=  (vyh(i,j)+vyh(i,j-1))/2.d0/((z(i,j)+h(i,j))*1.d-3)    ![m/s *m /km] = [mm/s] ! z added 2021.12.08
     !# vz = - int_-h^z (dvx/dx + dvy/dy) dz
     !#    = - (dvx/dx + dvy/dy)*(z+h)
     !#    = - (dvxh/dx + dvyh/dy) *(1 + z/h) [m/sec]
@@ -601,29 +732,38 @@ do j=2, ny
     110 continue ! 2018.11.14
   end do
 end do
-
-!write(*,*) "CALOCEANVXYZ check 2"
+!close(30)
+!write(*,*) "nx,ny",nx,ny
+!call countnonzero2( vx,nx,ny,ii) ; write(*,*) "vx count",ii
+!call countnonzero2( vy,nx,ny,ii) ; write(*,*) "vy count",ii
+!call countnonzero2( vz,nx,ny,ii) ; write(*,*) "vz count",ii
+!write(*,*) "IPL",IPL
+!call countnonzeroint2(ivxyzflagkl,IPL,3,ii); write(*,*) "ivxyzflagkl count",ii
+!call countnonzero2(    vxyzcoef,  IPL,2,ii); write(*,*) " vxyzcoef count",ii
 
 !#[2]## cal vx,vy,vz for nodes of tetrahedral mesh
 !write(*,*) "check2"
-vxyz(:,:)=0.d0
-icount=0
+!icount=0
 
 !write(*,*) "h_ocean%nodes =", h_ocean%nodes
 !write(*,*) "h_comcot%nodes =", h_ocean%nodes
 !write(*,*) "surfptr(IPL),nz(IPL)=",surfptr(IPL),nz(IPL)
+!open(25,file="iklAB.dat")
 
 do i=1, IPL
 !    write(*,*) "i=",i,"IPL=",IPL
 !    write(*,*) "surfptr(i)=",surfptr(i),"nz(i)=",nz(i)
-    if ( ivxyzflagkl(i,1) .eq. 1 ) then
-    k=ivxyzflagkl(i,2) ; A=vxyzcoef(i,1)  ; A1=1.d0 - A   ! A, A1 are dimensionless
+  if ( ivxyzflagkl(i,1) .eq. 1 ) then
+    k=ivxyzflagkl(i,2) ;  A=vxyzcoef(i,1) ; A1=1.d0 - A   ! A, A1 are dimensionless
     l=ivxyzflagkl(i,3) ;  B=vxyzcoef(i,2) ; B1=1.d0 - B    ! B, B1 are dimensionless
+!    write(25,*) "i k l A B",i,k,l,A,B
     vx1=vx(k,l)*A*B + vx(k+1,l)*A1*B + vx(k,l+1)*A*B1 + vx(k+1,l+1)*A1*B1
     vy1=vy(k,l)*A*B + vy(k+1,l)*A1*B + vy(k,l+1)*A*B1 + vy(k+1,l+1)*A1*B1
     vz1=vz(k,l)*A*B + vz(k+1,l)*A1*B + vz(k,l+1)*A*B1 + vz(k+1,l+1)*A1*B1
+     z1= z(k,l)*A*B +  z(k+1,l)*A1*B +  z(k,l+1)*A*B1 +  z(k+1,l+1)*A1*B1 ! 2021.12.08
     h0= - xyz(3, surfptr(i)+nz(i)-1 )  ! [km]
     if ( h0 .lt. 0.001d0 ) goto 100 ! if h is less than 1 m
+    z_tri(i) = z1 ! 2021.12.08
     do j=1,nz(i)
 	ii=surfptr(i)+(j-1)
 !	write(*,*)  "ii=",ii,"nodes=",nodes
@@ -634,6 +774,17 @@ do i=1, IPL
   end if
   100 continue
 end do
+!close(25)
+!write(*,*) "nodes",nodes
+!call countnonzero2( vxyz,3,nodes,ii) ; write(*,*) "vxyz count",ii
+!call countnonzero1( z_tri,IPL,ii) ; write(*,*) "z_tri count",ii
+
+deallocate(xgrd, ygrd,vx, vy, vz, vxh, vyh, h,z) ! 2021.12.08
+
+end do ! layer loop 2021.12.07
+
+!call countnonzero2( vxyz,3,nodes,ii) ; write(*,*) "vxyz count",ii
+!call countnonzero1( z_tri,IPL,ii) ; write(*,*) "z_tri count",ii
 
 !#[3]## check
 !if (icount .ne. nodes ) then
@@ -815,7 +966,7 @@ nodes = ocean_mesh%node
 call MAKENZ3(nz,IPL,surfptr,nodes)
 
 !#[4]## set em2oceanptr and ocean2emptr
- call allocateoceandata(h_ocean,nodes,node)  ! allocate Fxyz, vxyz, em2oceanptr, ocean2emptr
+ call allocateoceandata(h_ocean,nodes,node,IPL)  ! allocate Fxyz,vxyz,z_tri,em2oceanptr, ocean2emptr 2021.12.08 IPL is added
  h_ocean%em2oceanptr(1:node)  = em2oceanptr(1:node)
  h_ocean%ocean2emptr(1:nodes) = ocean2emptr(1:nodes)
  allocate(h_ocean%surfptr(IPL), h_ocean%nz(IPL))
@@ -847,9 +998,9 @@ return
 END
 
 !########################################## allocateoceandata
-subroutine allocateoceandata(h_ocean,nodes,node)
+subroutine allocateoceandata(h_ocean,nodes,node,IPL) ! 2021.12.08 IPL is added
 implicit none
-integer(4),intent(in) :: nodes,node
+integer(4),intent(in) :: nodes,node,IPL
 type(ocean_data),intent(out) :: h_ocean
 
 h_ocean%node  = node
@@ -858,6 +1009,7 @@ allocate(h_ocean%ocean2emptr(nodes))
 allocate(h_ocean%em2oceanptr(node))
 allocate(h_ocean%Fxyz(3,node))
 allocate(h_ocean%vxyz(3,node))
+allocate(h_ocean%z_tri(IPL)) ! 2021.12.08
 
 return
 end
@@ -873,20 +1025,24 @@ type(param_forward),     intent(in)   :: g_param ! 2018.11.14
 integer(4)                            :: node, IPL
 integer(4),allocatable,dimension(:)   :: surfptr
 real(8),   allocatable,dimension(:,:) :: vxyz, xyz
+real(8),   allocatable,dimension(:)   :: z_tri    ! 2021.12.08
 real(8)       :: vh,ph
 character(6)  :: num     ! 2019.01.23 4 -> 6
-character(70) :: vhfile, vzfile
-integer(4)    :: i, ii
+character(70) :: vhfile, vzfile, zfile ! 2021.12.08 zfile added
+integer(4)    :: i, ii,nodes ! 2021.12.08 nodes is added
 character(70) :: outfldr  ! 2018.11.14
 integer(4)    :: lenout   ! 2018.11.14
 
 !#[1]## set input
 node    = h_ocean%node
+nodes   = h_ocean%nodes ! 2021.12.08 correction from node to nodes
 IPL     = h_ocean%IPL
-allocate(surfptr(IPL),vxyz(3,node), xyz(3,node))
+allocate(surfptr(IPL),vxyz(3,nodes), xyz(3,node)) ! 2021.12.08 vxyz(node) to vxyz(nodes)
+allocate(z_tri(IPL))     ! 2021.12.08
 surfptr = h_ocean%surfptr
 vxyz    = h_ocean%vxyz
-xyz     = em_mesh%xyz
+ xyz    = em_mesh%xyz
+z_tri   = h_ocean%z_tri  ! 2021.12.08
 outfldr = g_param%outvxyzfolder ! 2018.11.14
 lenout  = len_trim(outfldr)     ! 2018.11.14
 
@@ -903,17 +1059,21 @@ end if
 write(num,'(i6.6)') it ! 2019.01.23
 vhfile=outfldr(1:lenout)//"vh"//num(1:6)//".dat" ! 2019.01.19
 vzfile=outfldr(1:lenout)//"vz"//num(1:6)//".dat" ! 2019.01.19
-open(1,file=vhfile)
-open(2,file=vzfile)
+ zfile=outfldr(1:lenout)//"z"//num(1:6)//".dat"  ! 2021.12.08
+!open(1,file=vhfile)
+!open(2,file=vzfile)
+open(3,file= zfile) ! 2021.12.08
 do i=1,IPL
-  ii=surfptr(i)
-  vh=dsqrt(vxyz(1,ii)**2.d0 + vxyz(2,ii)**2.d0)
-  ph =  datan2(vxyz(2,ii), vxyz(1,ii))*r2d
-  write(1,*) vh
-  write(2,*) vxyz(3,ii)
+!  ii=surfptr(i)
+!  vh=dsqrt(vxyz(1,ii)**2.d0 + vxyz(2,ii)**2.d0)
+!  ph =  datan2(vxyz(2,ii), vxyz(1,ii))*r2d
+!  write(1,*) vh
+!  write(2,*) vxyz(3,ii)
+  write(3,*) z_tri(i)        ! 2021.12.08
 end do
-close(1)
-close(2)
+!close(1)
+!close(2)
+close(3)! 2021.12.08
 return
 end
 

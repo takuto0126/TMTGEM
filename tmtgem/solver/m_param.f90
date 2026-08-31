@@ -38,12 +38,17 @@ type param_forward
  !#[3]## water velocity info
  integer(4)    :: iflag_velocity ! 1 for comcot, 2 for analytic
  !#[3-1]## COMCOT (iflag_velocity = 1 )
- character(70) :: xgrdfile_v ! eastgrid
- character(70) :: ygrdfile_v ! northgrid
- character(70) :: hgrdfile   ! ocean depth file
- character(70) :: mpre       ! header for M file from comcot
- character(70) :: npre       ! header for N file from comcot
+ integer(4)    :: iflag_comcot_spherical ! comcot is done in 0:cartesian, 1:spherical coordinate 2021.12.08
+ integer(4)    :: nlayer     ! # of layer from version 1.3,       2021.12.02
+ character(70),allocatable,dimension(:) :: xgrdfile_v ! eastgrid  2021.12.02
+ character(70),allocatable,dimension(:) :: ygrdfile_v ! northgrid 2021.12.02
+ character(70),allocatable,dimension(:) :: hgrdfile   ! ocean depth file 2021.12.02
+ character(70),allocatable,dimension(:) :: mpre       ! header for M file from comcot 2021.12.02
+ character(70),allocatable,dimension(:) :: npre       ! header for N file from comcot 2021.12.02
+ character(70),allocatable,dimension(:) :: zpre       ! header for Z file from comcot 2021.12.02 Z is from v1.3
+ !#
  real(8)       :: dt_comcot  ! time interval of comcot result
+ real(8)       :: dt_sim_comcot  ! 2024.01.19 TT
  !#[3-2]## analytical velocity (iflag_velocity = 2)
  type(param_ana) :: h_anapara
 
@@ -96,13 +101,28 @@ type param_forward
  character(70) :: woafile      ! name global conductivity data from WOA
  end type
 
+type param_cond ! 2024.02.01
+ integer(4)    :: condflag ! 0: (partitioned) homegeneous earth, 1: file is given
+ character(50) :: condfile
+ integer(4)    :: ntet
+ integer(4)    :: nphys1 ! # of elements of air
+ integer(4)    :: nphys2 ! # of elements in land
+ real(8)       :: sigma_air=1.d-8 ! [S/m]
+ integer(4),allocatable,dimension(:) :: index ! element id for nphys 2, 2017.05.10
+ real(8),   allocatable,dimension(:) :: sigma ! [S/m]
+ real(8),   allocatable,dimension(:) :: rho   ! [Ohm.m]
+ integer(4)    :: nvolume     ! # of region for land  ( condflag = 0 )2017.09.28
+ real(8),   allocatable,dimension(:) :: sigma_land  ! ( condflag = 0 )2017.09.28
+end type
+
 
 contains
 !################################################## subroutine readparam
-subroutine readparam(c_param)
+subroutine readparam(c_param,g_cond)
 implicit none
 type(param_forward),intent(out) :: c_param
-integer(4) :: i,j,input=5
+type(param_cond),   intent(out) :: g_cond   ! 2024.02.01
+integer(4) :: i,j,ilayer,nlayer,input=5 ! 2021.12.08 ilayer is added
 
 !open(input,file="tohoku.ctl")
 read(input,*) ! header
@@ -133,19 +153,44 @@ write(*,*) "1: provide by COMCOT file, 2: analytical velocity"
 read(input,12) c_param%iflag_velocity
 write(*,*) "iflag_velocity=",c_param%iflag_velocity ! 2017.10.26
  !#[2-1]## COMCOT
-if ( c_param%iflag_velocity .eq. 1 ) then
- write(*,*) "Please enter x grid file"
- read(input,10) c_param%xgrdfile_v
- write(*,*) "Please enter y grid file"
- read(input,10) c_param%ygrdfile_v
- write(*,*) "Please enter h grid file"
- read(input,10) c_param%hgrdfile
- write(*,*) "Please enter M header file"
- read(input,10) c_param%mpre
- write(*,*) "Please enter N header file"
- read(input,10) c_param%npre
- write(*,*) "Please enter time interval for COMCOT results"
- read(input,11) c_param%dt_comcot
+ if ( c_param%iflag_velocity .eq. 1 ) then
+ write(*,*) "Please enter 0:Cartesian or 1:Spherical for COMCOT simulation"! 2021.12.08
+ read(input,12) c_param%iflag_comcot_spherical ! 2021.12.08
+ write(*,*) "iflag_comcot_spherical =", c_param%iflag_comcot_spherical ! 2021.12.08
+ write(*,*) "Please enter # of layer in COMCOT (nlyaer)" !2021.12.02
+ if (c_param%iflag_comcot_spherical .eq. 0) write(*,*) "COMCOT simulation was done in Cartesian coordinate"!2021.12.08
+ if (c_param%iflag_comcot_spherical .eq. 0) write(*,*) "COMCOT simulation was done in Spherical coordinate"!2021.12.08
+ read(input,12) c_param%nlayer               ! 2021.12.02
+ write(*,*) "# of layers is",c_param%nlayer  ! 2021.12.02
+ nlayer = c_param%nlayer
+ allocate(c_param%xgrdfile_v(nlayer))        ! 2021.12.02
+ allocate(c_param%ygrdfile_v(nlayer))        ! 2021.12.02
+ allocate(c_param%hgrdfile(  nlayer))        ! 2021.12.02
+ allocate(c_param%mpre(nlayer))              ! 2021.12.02
+ allocate(c_param%npre(nlayer))              ! 2021.12.02
+ allocate(c_param%zpre(nlayer))              ! 2021.12.02
+ do ilayer = 1,c_param%nlayer                ! 2021.12.02
+  write(*,*) "Please enter x grid file"
+  read(input,10) c_param%xgrdfile_v(ilayer)  ! 2021.12.02
+  write(*,*) "Please enter y grid file"
+  read(input,10) c_param%ygrdfile_v(ilayer)  ! 2021.12.02
+  write(*,*) "Please enter h grid file"
+  read(input,10) c_param%hgrdfile(ilayer)    ! 2021.12.02
+  write(*,*) "Please enter M header file"
+  read(input,10) c_param%mpre(ilayer)        ! 2021.12.02
+  write(*,*) "Please enter N header file"
+  read(input,10) c_param%npre(ilayer)        ! 2021.12.02
+  write(*,*) "Please enter Z header file"    ! 2021.12.02
+  read(input,10) c_param%zpre(ilayer)        ! 2021.12.02
+ end do                                      ! 2021.12.02
+ write(*,*) "Please enter time interval for save COMCOT data [sec]" 
+ read(input,11) c_param%dt_comcot    
+ write(*,*) "c_param%dt_comcot",c_param%dt_comcot ! 2024.02.02
+ write(*,*) "Please enter time interval for COMCOT simulation [sec]"  ! 2024.01.19 TT
+ read(input,11) c_param%dt_sim_comcot            ! 2024.01.19 TT
+ write(*,*) "c_param%dt_sim_comcot =",c_param%dt_sim_comcot ! 2024.02.02
+ ! refer to line34 in output.f90 in comcotv1_7
+ c_param%dt_comcot=c_param%dt_sim_comcot*NINT(c_param%dt_comcot/c_param%dt_sim_comcot)  ! 2024.01.19 TT
  !#[2-2]## analytical wave
 else if (c_param%iflag_velocity .eq. 2 ) then
  write(*,*) "Please input parameters for analytical velocity for LLW"
@@ -184,6 +229,7 @@ write(*,*) "0: use IGRF12 with COMCOT flow input (not available when using analy
 write(*,*) "1: provide input geomag file, 2: constant geomag vector"
 read(input,12)  c_param%iflag_geomag
 write(*,*)  "iflag_geomag=",c_param%iflag_geomag
+!################################################################### IGRF
 if (            c_param%iflag_geomag .eq. 0 ) then                                  ! 2018.11.14
  write(*,*) "IGRF will be used with the COMCOT grid info (read as X:lon, Y:lat)"    ! 2018.11.14
  write(*,*) "Please input decimal year for calculation of background magnetic field"! 2018.11.14
@@ -196,6 +242,8 @@ if (            c_param%iflag_geomag .eq. 0 ) then                              
  read(input,10) c_param%xgrdfile_f                     ! 2018.11.14
  write(*,*) "Please enter y grid file for geomag data" ! 2018.11.14
  read(input,10) c_param%ygrdfile_f                     ! 2018.11.14
+
+!################################################################### MAGNETIC DATA FILE
 else if (       c_param%iflag_geomag .eq. 1 ) then
  write(*,*) "Please enter x grid file for geomag data"
  read(input,10) c_param%xgrdfile_f
@@ -203,6 +251,8 @@ else if (       c_param%iflag_geomag .eq. 1 ) then
  read(input,10) c_param%ygrdfile_f
  write(*,*) "Please enter geomag file (north[nT],east[nT],down[nT])"
  read(input,10) c_param%geomagfile
+
+!################################################################### CONSTANT BACKGROUND MAGNETIC DATA
 else if (       c_param%iflag_geomag .eq. 2 ) then
  write(*,*) "Please enter vector geomagnetic field (east,north,upward)[nT]"
  read(input,13) c_param%geomagvector(1:3)
@@ -306,7 +356,7 @@ end if
   read(input,11) c_param%cond(i)
  end do
 
-!#[8]## global conductivity is used or not 2018.08.30
+!#[8]## global ocean conductivity is used or not 2018.08.30
  c_param%iflag_oceancond = 1 ! 2018.08.30
  write(*,*) "Input 1 for fixed conductivity, 2 for global conductivity data"!2018.08.30
  read(input,12,end=98) c_param%iflag_oceancond                      !2018.08.30
@@ -315,6 +365,33 @@ end if
   read(input,10)       c_param%woafile                              !2018.08.30
  end if                                                             !2018.08.30
 
+!#[9]##  read crust mantle conductivity information  ## 2024.02.01
+  g_cond%sigma_air = c_param%cond(1) ! 2024.02.01
+  write(*,'(a,g15.7,a)') " sigma_air =",g_cond%sigma_air," [S/m]"
+  read(input,12) g_cond%condflag  ! 0:homogeneous, 1:file
+  write(*,*) "g_cond%condflag = ",g_cond%condflag                   ! 2024.02.01
+  if (g_cond%condflag .eq. 0 ) then    ! nvolume homogeneous crust    2017.09.29
+   goto 100 ! temporary 2024.02.02 Takuto Minami
+   write(*,*) "" ! 2020.09.29
+   write(*,*) "<Input # of physical volumes in land region>"
+   read(input,*) g_cond%nvolume ! # of physical volume in land, ! 11->* 2021.09.02
+   write(*,12) "nvolume=",g_cond%nvolume
+   allocate( g_cond%sigma_land(g_cond%nvolume) )                    ! 2017.09.28
+   write(*,*) "" ! 2020.09.29
+   write(*,*) "<Inuput land sigma [S/m] for each physical volume>"  ! 2017.09.28
+   do i=1,g_cond%nvolume
+    read(input,11) g_cond%sigma_land(i) ! conductivity in land region 2017.09.28, ! 12->* 2021.09.02
+    write(*,*) i,"sigma_land=",g_cond%sigma_land(i),"[S/m]"
+   end do
+  else if (g_cond%condflag .eq. 1) then !  crust conductivity given by file
+   read(input,'(20x,a50)') g_cond%condfile  ! 2021.10.04
+   write(*,*) "cond file is",g_cond%condfile
+   CALL READCOND(g_cond)          ! read conductivity structure
+  else
+   write(*,*) "no file and no nvolume condflag should be 0 or 1 : condflag=",g_cond%condflag!2024.02.01
+  end if
+
+100 continue ! 2024.02.02
 98 continue ! 2018.08.30
 
 10 format(20x,a70)
@@ -322,7 +399,6 @@ end if
 12 format(20x,i10)
 13 format(20x,3g15.7)
 14 format(20x,2i10)
-15 format(20x,a10) ! 2018.08.30
 
 write(*,*) "## READPARAM END!! ###"
 return
@@ -333,5 +409,59 @@ write(*,*) "c_param%lonlatflag=",c_param%lonlatflag
 stop
 end subroutine readparam
 !
+!----------------------------------------- READCOND
+subroutine READCOND(g_cond)
+implicit none
+type(param_cond),     intent(inout)  :: g_cond
+real(8),   allocatable,dimension(:)  :: rho
+integer(4),allocatable,dimension(:)  :: index
+integer(4) :: nphys2
+integer(4) :: i,input=11
+
+!#[1]## read condfile
+ write(*,*) "condfile : ",g_cond%condfile ! 2020.07.19
+ open(input,file=g_cond%condfile)
+!# header
+ do i=1,11      ! 2017.09.11 changed from 8 to 11
+  read(input,*)
+ end do
+  read(input,*) nphys2
+ allocate(rho(nphys2),index(nphys2)) !!! Important !!!!
+ do i=1,nphys2
+  read(input,*) index(i),rho(i)
+ end do
+ close(input)
+
+!#[2]## set g_cond
+ allocate(g_cond%rho(  nphys2))
+ allocate(g_cond%sigma(nphys2))
+ allocate(g_cond%index(nphys2)) ! added on 2017.05.10
+ g_cond%rho    = rho
+ g_cond%nphys2 = nphys2
+ g_cond%sigma  = -9999. ! 2017.11.06
+ do i=1,nphys2
+  if (abs(rho(i)) .gt. 1.d-10 ) g_cond%sigma(i) = 1.d0/rho(i) ! 2017.11.06
+!  write(*,*) i,"g_cond%sigma(i)=",g_cond%sigma(i)
+ end do
+write(*,*) "g_cond%nphys2 =",g_cond%nphys2 ! 2021.01.08
+write(*,*) "### READCOND  END!! ###"       ! 2020.09.29
+return
+end subroutine
+!----------------------------------------- deallocatecond
+! Coded on 2017.05.14
+subroutine deallocatecond(g_cond)
+implicit none
+type(param_cond),intent(inout) :: g_cond
+
+g_cond%ntet   = 0
+g_cond%nphys1 = 0! # of elements of air
+g_cond%nphys2 = 0! # of elements in land
+if (allocated(g_cond%index)) deallocate(g_cond%index) ! element id for nphys 2, 2018.10.05
+if (allocated(g_cond%sigma)) deallocate(g_cond%sigma) ! [S/m]   2018.10.05
+if (allocated(g_cond%rho)  ) deallocate(g_cond%rho  ) ! [Ohm.m] 2018.10.05
+
+return
+end subroutine
+
 
 end module param

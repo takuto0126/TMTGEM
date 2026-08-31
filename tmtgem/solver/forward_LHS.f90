@@ -73,7 +73,7 @@ end
 ! Coded on March 4, 2016
 ! replace integration by tetrai_table by analytical integration
 !subroutine GENMAT(h_mesh,l_line,A,b_vec,omega,pi,dmu,bp,sparam,icomp,isource_for_B)
-subroutine GENMAT(em_mesh,l_line,A,dmu,igroup,dt,g_param)
+subroutine GENMAT(em_mesh,l_line,A,dmu,igroup,dt,g_param) 
 use  outerinnerproduct
 use  iccg_var_takuto ! b_vec is not included, see m_iccg_var_takuto.f90
 use  mesh_type       ! see m_mesh_type.f90

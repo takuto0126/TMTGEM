@@ -18,7 +18,7 @@ type(line_info),      intent(in)  :: l_line
 type(param_forward),  intent(in)  :: g_param
 type(mesh),           intent(in)  :: ki_mesh  ! 2021.07.27
 type(obs_info),       intent(out) :: obs_sites
-integer(4)                        :: ki23dptr(2,g_param%nodek) ! 2021.07.27
+integer(4),allocatable,dimension(:,:) ::  ki23dptr ! 2021.07.27
 ! (1,(1,2,3)) for edge basis fun (x,y,z), (2,(1,2,3)) for face basis fun
 type(grid_list_type) :: glist
 integer(4) :: nx,ny,nz,nobs,ntet,nodek,ndat,i,j,ii
@@ -30,7 +30,7 @@ real(8)    :: xyzminmax(6) ! 1 for normal
  ntet           = em_mesh%ntet
  nobs           = g_param%nobs
  nodek          = g_param%nodek     ! 2021.07.27
- ki23dptr       = g_param%ki23dptr  ! 2021.07.27
+ ki23dptr       = g_param%ki23dptr  ! ki23dptr(2,nodek) allocate and fill 2024.03.17
  obs_sites%nobs = nobs
  obs_sites%name = "Site" !up to 4 characters
  allocate(obs_sites%xyz_obs(3,nobs))
@@ -43,7 +43,7 @@ real(8)    :: xyzminmax(6) ! 1 for normal
 !#[1] calculate z_obs and vf_coeff 2021.07.27
    !#[1-3]## modify zcoordinate of obs 1m beneath the seafloor 2021.07.27
    iflag = 1 ! get zobs, iflag = 0 for nothing, iflag = 1 for getting vf_coeff 2021.07.27
-   CALL PREPZOBS(obs_sites,em_mesh,ki_mesh,ki23dptr,g_param,iflag) !get zobs and vf_coeff 2021.07.27
+   CALL PREPZOBS(obs_sites,em_mesh,ki_mesh,nodek,ki23dptr,g_param,iflag) !get zobs and vf_coeff 2021.07.27
 
 !#[OPTION]## iflagspherical = 1  ##
   if ( g_param%iflagspherical .eq. 1 ) then
@@ -81,7 +81,7 @@ end
 ! Copied from volcano/3D_ana_comp/FEM_edge_bxyz_model/n_ebfem_bxyz.f90
 ! on 2016.11.13
 ! calcualte h_mesh%zobs from h_mesh%xyz
-subroutine PREPZOBS(obs,em_mesh,h_mesh,ki23dptr,g_param,iflag)
+subroutine PREPZOBS(obs,em_mesh,h_mesh,nodek,ki23dptr,g_param,iflag)
 use mesh_type
 use obs_type ! 2016.11.20
 use matrix   ! 2016.11.20
@@ -90,7 +90,7 @@ use param    ! 2016.11.23
 use triangle ! 2016.11.23
 implicit none
 type(mesh),         intent(in)    :: em_mesh,h_mesh
-integer(4),         intent(in)    :: ki23dptr(2,h_mesh%node)
+integer(4),         intent(in)    :: nodek,ki23dptr(2,nodek) ! 2024.03.17
 type(param_forward),intent(in)    :: g_param
 type(obs_info),     intent(inout) :: obs
 integer(4),         intent(in)    :: iflag ! 0: nothing, 1 for calculate coeff_vF for IXYHOUT
