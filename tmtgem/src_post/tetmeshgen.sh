@@ -4,7 +4,7 @@ source /opt/intel/oneapi/setvars.sh > /dev/null 2>&1 # 2023.12.07
 
 head="polygon"
 sdir="../../tmtgem/mesh"
-ctl="mesh.ctl"
+ctl="mesh2.ctl"
 
 # [0] coastline.exe
 cd $sdir
@@ -19,6 +19,7 @@ cd -
 
 #[1]## coastline
  ${sdir}/coastline.exe < ${ctl}
+exit
 
 #[2]## gmsh polygonki.geo
 gmsh ${head}ki.geo -2 -format msh2 -bgm bgmesh.pos
