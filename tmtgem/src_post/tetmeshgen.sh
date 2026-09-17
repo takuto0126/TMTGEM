@@ -19,7 +19,6 @@ cd -
 
 #[1]## coastline
  ${sdir}/coastline.exe < ${ctl}
-exit
 
 #[2]## gmsh polygonki.geo
 gmsh ${head}ki.geo -2 -format msh2 -bgm bgmesh.pos

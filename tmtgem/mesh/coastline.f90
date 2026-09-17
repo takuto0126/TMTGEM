@@ -481,8 +481,14 @@ end subroutine makepolygon7
  close(2) ! 2019.02.27
  !# Now the ncoast coastline nodes are ordered
  !    to be {1 2 3},{4,5,6,7,8,9}, where {} means one polygon
- if (ncoast .ne. ii) then
-  write(*,*) "GEGEGE!!! ncoast is not equal to ii!!ncoast=",ncoast,"ii=",ii
+ !# 2026.09.17 loopelement() now merges coastline nodes that coincide
+ !# in coordinates with the point already recorded (zero-length steps
+ !# from a near-zero-elevation grid corner, see loopelement), so ii can
+ !# legitimately be smaller than ncoast. ii exceeding ncoast would still
+ !# indicate a genuine bug (double counting), so keep that check.
+ write(*,*) "# of coastline nodes merged as zero-length duplicates=",ncoast-ii
+ if (ii .gt. ncoast) then
+  write(*,*) "GEGEGE!!! ii exceeds ncoast!!ncoast=",ncoast,"ii=",ii
   stop
  end if
 
@@ -1376,6 +1382,7 @@ real(8),   dimension(lpmax,ncmax),intent(inout) :: xpoly,ypoly
 integer(4),dimension(ncoast)                    :: polygon
 real(8),   dimension(node)                      :: h
 real(8),   dimension(ncmax)                     :: cx,cy
+real(8),   parameter                            :: epsdup=1.d-8 ! 2026.09.17 see comment below
 
  i=iii  ! i is the starting node
  l=l+1  ! increase polygon number
@@ -1398,7 +1405,7 @@ real(8),   dimension(ncmax)                     :: cx,cy
 !   write(*,*) "ind(i,1)=",ind(i,1),"ind(i,2)=",ind(i,2),"nuwd=",nuwd
 !##  polygon loop start
 100 continue
- call findnextnode(i,nuwd,ncoast,ncmax,node,neast,h,ind0,ii,nuwd2)
+ call findnextnode(i,nuwd,ncoast,ncmax,node,neast,h,ind0,cx,cy,ii,nuwd2)
 !write(*,*) "i,ind(i,1),ind(i,2),nuwd=",i,ind(i,1),ind(i,2)
 !write(*,*) "ii,ind(ii,1),ind(ii,2),nuwd2=",ii,ind(ii,1),ind(ii,2),nuwd2
 !### if the circle is closed ###
@@ -1408,9 +1415,25 @@ if ( label(ii,1) .eq. l ) then
     goto 200
 end if
  label(ii,1)=l
- j=j+1
- label(ii,2)=j
- polygon(j)=ii ! ii is the next node of i in j-th polygon
+ !# 2026.09.17 ii can coincide (up to floating-point roundoff) with the
+ !# point most recently recorded (i) when two independent
+ !# (grid-node,direction) registrations interpolate to (almost) the
+ !# same location -- typically a grid corner where h is essentially
+ !# zero. The two interpolations are computed along different edges,
+ !# so they generally do NOT agree bit-for-bit (observed gap ~1.d-14,
+ !# i.e. a few ULP), while genuinely distinct coastline points sampled
+ !# from this grid are never closer than ~1.d-6. So compare with a
+ !# tolerance (epsdup), well inside that gap, instead of exact .eq..
+ !# Recording ii as a new vertex despite the coincidence creates a
+ !# (near-)zero-length polygon edge, which later makes SPLINE() divide
+ !# by zero (t(j)-t(j-1)~=0).
+ if ( dabs(cx(ii)-cx(i)) .lt. epsdup .and. dabs(cy(ii)-cy(i)) .lt. epsdup ) then
+  label(ii,2)=j ! same local node number as the point already recorded
+ else
+  j=j+1
+  label(ii,2)=j
+  polygon(j)=ii ! ii is the next node of i in j-th polygon
+ end if
 !### if reach calculation boundaries ###
  if ( (ind0(ii,1) .le. neast .and. ind0(ii,2) .eq. 1 ) .or. &  !top boundary
     &     (ind0(ii,1) .gt. node-neast .and. ind0(ii,2) .eq. 1 ) .or. & !bottom boundary
@@ -1459,14 +1482,16 @@ end
 !# ind(ncoast,2) points to left/top original gebco grid nodes
 ! ind(i,1) : grid node # of original gebco file on left or up side
 ! ind(i,2) : 1 -> ind(1) indicates left node, 2 -> ind(2) is top side node
-subroutine findnextnode(i,nuwd,ncoast,ncmax,node,neast,h,ind0,ii,nuwd2)
+subroutine findnextnode(i,nuwd,ncoast,ncmax,node,neast,h,ind0,cx,cy,ii,nuwd2)
 implicit none
 integer(4)                    :: i,nuwd,neast,ncoast,node,ii,j,ij,jj,nuwd2,ncmax
 real(8),   dimension(node)    :: h
 integer(4),dimension(ncmax,2) :: ind0
+real(8),   dimension(ncmax)   :: cx,cy ! 2026.09.17 added to detect zero-length steps in the ij==3 branch
 integer(4),dimension(3,2)     :: ind1
 integer(4),dimension(3)       :: id3,iflag
 integer(4),dimension(3,4)     :: nuwd34
+real(8),   parameter          :: epsdup=1.d-8 ! 2026.09.17 see comment in the ij==3 branch below
 data nuwd34(1,1:4) /4,3,4,3/
 data nuwd34(2,1:4) /2,1,2,1/
 data nuwd34(3,1:4) /1,2,3,4/
@@ -1550,6 +1575,30 @@ if ( ij .eq. 3 ) then
  else
  ii=id3(2)
  nuwd2=nuwd34(2,nuwd)
+ end if
+ !# 2026.09.17 when h(ind0(i,1)) is nearly zero, the current node sits
+ !# essentially on the grid corner, and more than one of the three
+ !# candidate edges can interpolate to (almost) the same coordinate as
+ !# the current node i, producing a zero-length step in the polygon.
+ !# Two such interpolations agree only up to floating-point roundoff
+ !# (a few ULP, not bit-for-bit -- see loopelement), so compare with a
+ !# tolerance (epsdup). If the chosen candidate coincides with node i,
+ !# fall back to the other candidate (and, if that also coincides, to
+ !# id3(3)) instead.
+ if ( dabs(cx(ii)-cx(i)) .lt. epsdup .and. dabs(cy(ii)-cy(i)) .lt. epsdup ) then
+  if ( ii .eq. id3(1) .and. iflag(2) .eq. 1 .and. &
+ &     .not.( dabs(cx(id3(2))-cx(i)) .lt. epsdup .and. dabs(cy(id3(2))-cy(i)) .lt. epsdup ) ) then
+   ii=id3(2)
+   nuwd2=nuwd34(2,nuwd)
+  else if ( ii .eq. id3(2) .and. iflag(1) .eq. 1 .and. &
+ &     .not.( dabs(cx(id3(1))-cx(i)) .lt. epsdup .and. dabs(cy(id3(1))-cy(i)) .lt. epsdup ) ) then
+   ii=id3(1)
+   nuwd2=nuwd34(1,nuwd)
+  else if ( iflag(3) .eq. 1 .and. &
+ &     .not.( dabs(cx(id3(3))-cx(i)) .lt. epsdup .and. dabs(cy(id3(3))-cy(i)) .lt. epsdup ) ) then
+   ii=id3(3)
+   nuwd2=nuwd34(3,nuwd)
+  end if
  end if
 end if
 return
