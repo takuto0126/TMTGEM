@@ -20,7 +20,7 @@ tminami@port.kobe-u.ac.jp
 
 ### Contents
 
-1. [Introduction](#Introduction) 
+1. [Introduction](#Introduction)
 2. [Important notes](#ImportantNotes)
 3. [Required environments](#Required_environments)
 4. [Run sample simulations](#Run_sample_simulations)  
@@ -469,7 +469,8 @@ Please send messages to takuto.minami126@gmail.com when you face any difficultie
 
 Given the governing equation,
 
-$$ \nabla \times \nabla \times \mathbf{A} + \mu \sigma \frac{\partial \mathbf{A}}{\partial t} = \mu \sigma (\mathbf{v} \times \mathbf{B}_0)$$ 
+$$ \nabla \times \nabla \times \mathbf{A} + \mu \sigma \frac{\partial \mathbf{A}}{\partial t} = \mu \sigma (\mathbf{v} \times \mathbf{B}_0)
+$$ 
 
 in the finite element method with the Galerkin method, we numerically solve
 
@@ -487,11 +488,11 @@ $$ ∫_Ω[w⋅(∇×∇×A)dV]=∫_Ω{(∇×w)⋅(∇×A)}dV⋅⋅⋅(3)$$
 Substituting Eq. (3) into Eq. (1), we obtain
 $$ \int_\Omega {(\nabla \times \mathbf{w})\cdot (\nabla \times \mathbf{A})}dV+∫_Ω[μσw⋅∂A/∂t dV]=μσ\int_\Omega\left[ w⋅(v\times B_0)dV \right].⋅⋅⋅(4)$$
 In the finite element method, we divide the numerical domain into finite number of the tetrahedrons and calculate the volume integral for each tetrahedral element. In the remaining, we think only an volume integral for e-th element, Ω_e, then Eq. (4) is rewritten for e-th element as
-$$ ∫_{Ω_e} {(∇×w_i )⋅(∇×A_e )}dV+∫_{Ω_e} \left[μσw_i⋅\frac{\partial A_e}{\partial t} dV \right] =μσ∫_{Ω_e}[w_i⋅(v×B_0)dV]⋅⋅⋅(5)$$
-where $w_i  (i=1,⋅⋅⋅,6)$ is the edge-basis function for each edge of the e-th tetrahedron. We represent the vector potential in the e-th element as
-$$ A_e=∑_{j=1}^6 \left[ w_j  [Al]_j \right]⋅⋅⋅⋅(6)$$
+$$ ∫_{Ω_e} {(∇×\mathbf{w}_i )⋅(∇×A_e )}dV+∫_{Ω_e} \left[μσ\mathbf{w}_i⋅\frac{\partial A_e}{\partial t} dV \right] =μσ∫_{Ω_e}[\mathbf{w}_i⋅(v×B_0)dV]⋅⋅⋅(5)$$
+where $\mathbf{w}_i  (i=1,⋅⋅⋅,6)$ is the edge-basis function for each edge of the e-th tetrahedron. We represent the vector potential in the e-th element as
+$$ A_e=∑_{j=1}^6 \left[ \mathbf{w}_j  [Al]_j \right]⋅⋅⋅⋅(6)$$
 wehre
-$$ w_j=w_{kl}=λ_k ∇λ_l-λ_l ∇λ_k $$
+$$ \mathbf{w}_j=w_{kl}=λ_k ∇λ_l-λ_l ∇λ_k $$
 $λ_k$ is the nodal basis function. The relationship between $j$ and $k$,$l$ are shown in the following figure and table.
  
 #### Table. A1. Node indices for edge index $i$,$j$ 
@@ -508,36 +509,42 @@ $λ_k$ is the nodal basis function. The relationship between $j$ and $k$,$l$ are
 Table A1
 Using Eq. (6), Eq. (5) can be reduced to
 
-$$ ∑_{j=1}^6 \left[ ∫_{Ω_e} {(∇×w_i )⋅(∇×w_j )}dV [Al]_j \right] + ∑_{j=1}^6 \left[ ∫_{Ω_e}[μσw_i⋅w_j] dV \frac{d}{dt} [Al]_j \right] = μσ_e ∫_{Ω_e} [w_i⋅(v×B_0)dV]⋅⋅⋅(7)$$
+$$ ∑_{j=1}^6 \left[ ∫_{Ω_e} {(∇×\mathbf{w}_i )⋅(∇×\mathbf{w}_j )}dV [Al]_j \right] + ∑_{j=1}^6 \left[ ∫_{Ω_e}[μσ\mathbf{w}_i⋅\mathbf{w}_j] dV \frac{d}{dt} [Al]_j \right] = μσ_e ∫_{Ω_e} [\mathbf{w}_i⋅(v×B_0)dV]⋅⋅⋅(7)$$
 
 which is rewritten in the matrix form as,
 
 $$[M_e ]+μσ_e [N_e ]  \frac{d}{dt} [Al]_e =s_e ⋅⋅⋅(8)$$
 
 $$ [Al]_e =[[Al]_1  [Al]_2  [Al]_3  [Al]_4  [Al]_5  [Al]_6 ]^T⋅⋅⋅(9)$$
-$$[M_e ]_{ij}=∫_{Ω_e}{(∇×w_i )⋅(∇×w_j )}dV=1/3v x_mn⋅1/3v x_{m'n'}×v=1/9v x_mn⋅x_{m'n'}⋅⋅⋅(10)$$
-$$[N_e ]_{ij}=∫_{Ω_e}[w_i⋅w_j dV]=∫_{Ω_e}[(λ_k ∇λ_l-λ_l ∇λ_k )⋅(λ_{k'} ∇λ_{l'}-λ_{l'} ∇λ_{k'} )dV]$$
+$$[M_e ]_{ij}=∫_{Ω_e}{(∇×\mathbf{w}_i )⋅(∇×\mathbf{w}_j )}dV=1/3v x_mn⋅1/3v x_{m'n'}×v=1/9v x_mn⋅x_{m'n'}⋅⋅⋅(10)$$
+$$[N_e ]_{ij}=∫_{Ω_e}[\mathbf{w}_i⋅\mathbf{w}_j dV]=∫_{Ω_e}[(λ_k ∇λ_l-λ_l ∇λ_k )⋅(λ_{k'} ∇λ_{l'}-λ_{l'} ∇λ_{k'} )dV]$$
 $$ =∫_{Ω_e}(λ_k λ_{k'} ∇λ_l⋅∇λ_{l'}-λ_k λ_{l'} ∇λ_l⋅∇λ_{k'}-λ_l λ_{k'} ∇λ_k⋅∇λ_{l'}+λ_l λ_{l'} ∇λ_k⋅∇λ_{k'} )dV$$
 $$=∇λ_l⋅∇λ_{l'} ∫_{Ω_e}[λ_k λ_{k'} dV]-∇λ_l⋅∇λ_{k'} ∫_{Ω_e}[λ_k λ_{l'} dV]$$
 $$-∇λ_k⋅∇λ_{l'} ∫_{Ω_e}[λ_l λ_{k'} dV]+∇λ_k⋅∇λ_{k'} ∫_{Ω_e}[λ_l λ_{l'} dV]⋅⋅⋅(11)$$
-$$[s_e ]_i=μσ_e ∫_{Ω_e}[w_i⋅(v×B_0 )dV]=μσ_e ∫_{Ω_e} [w_i⋅(∑_{j=1}^4[λ_k [v×B_0]_j ])dV] =μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i λ_m dV])⋅[v×B_0 ]_m ] $$
+$$[s_e ]_i=μσ_e ∫_{Ω_e}[\mathbf{w}_i⋅(v×B_0 )dV]=μσ_e ∫_{Ω_e} [\mathbf{w}_i⋅(∑_{j=1}^4[λ_k [v×B_0]_j ])dV] =μσ_e ∑_{m=1}^4[(∫_{Ω_e}[\mathbf{w}_i λ_m dV])⋅[v×B_0 ]_m ] $$
 $$=μσ_e ∑_{m=1}^4 [(∫_{Ω_e}[(λ_k ∇λ_l-λ_l ∇λ_k ) λ_m dV]) [⋅v×B_0 ]_m ] (12)$$
 Here we introduce the backward Euler method for temporal evolution,
 $$\frac{\partial u_{n+2}}{\partial t}=\frac{1}{2Δt} (3u_{n+2}-4u_{n+1}+u_n ).⋅⋅⋅(13)$$
 Applying Eq. (13) to Eq. (8) leads to
-$$ \left[ [M_e ]+\frac{3μσ_e}{2Δt} [N_e ] \right] [[Al]_e ]_{n+2}=\frac{1}{2Δt} [N_e ](4[[Al]_e ]_{n+1}-[[Al]_e ]_n )+[s_e]_{n+2}⋅⋅⋅(14)$$
+$$ \left[ [M_e ]+\frac{3μσ_e}{2Δt} [N_e ] \right] [Al_e ]_{n+2}=\frac{1}{2Δt} [N_e ](4[Al_e]_{n+1}-[Al_e]_n )+[s_e]_{n+2}⋅⋅⋅(14)$$
 
 # Appendix B: Scaling of the governing equation
 From eq. (14), the equation to be solved at each time step is rewritten as
 
-$$∑_{j=1}^6 \left[ ∫_{Ω_e}{(∇×w_i )⋅(∇×w_j )dV+\frac{3μσ_e}{2Δt} [∫_{Ω_e}[w_i⋅w_j dV]]} [[Al]_j ]_{n+2} \right]=∑_{j=1}^6[\frac{1}{2Δt} [∫_{Ω_e}[w_i⋅w_j dV]](4[[Al]_j ]_{n+1}-[[Al]_j ]_n ) ]+μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i λ_m dV])⋅[v×B_0 ]_m ] .⋅⋅⋅(15)$$
+$$∑_{j=1}^6 \left[ ∫_{Ω_e}(\nabla \times \mathbf{w}_i)\cdot (\nabla \times \mathbf{w}_j )dV+\frac{3μσ_e}{2Δt} ∫_{Ω_e}\mathbf{w}_i⋅\mathbf{w}_j dV \right][Al_j]_{n+2} $$
 
-In TMTGEM, scaled form of Eq. (15) is solved using the scaling length L, set to be 1000m in TMTGEM. Consider to rewrite Eq. (17) by using $∇=\frac{1}{L} ∇'$,$w=\frac{1}{L} w'$,$dV=L^3 dV'$, $Al[s⋅V/m⋅m]=∫A⋅dl=\frac{1}{L} Al'$, where $Al'$  [s⋅mV/km⋅km],and $E={\partial A}/{\partial t}$. Furthermore, we assume $v=\frac{1}{L}⋅v'$[mm/s] and $B_0=\frac{1}{L}^3⋅B_0'$  [nT] These replacements correspond to the fact that w and ∇ are constructed as w’ and ∇’ with the coordinate system in the unit of km.
+$$=∑_{j=1}^6\frac{1}{2Δt} \left[ ∫_{Ω_e}\mathbf{w}_i \cdot \mathbf{w}_j dV\right](4[Al_j]_{n+1}-[Al_j]_n )+\mu \sigma_e ∑_{m=1}^4 \left[∫_{Ω_e}\mathbf{w}_i λ_m dV \right]⋅[\mathbf{v}×\mathbf{B}_0 ]_m⋅⋅⋅(15)$$
 
-$$∑_{j=1}^6 ∫_{Ω_e}(\frac{1}{L} ∇'×\frac{1}{L} w'_i )⋅(\frac{1}{L} ∇'×\frac{1}{L} w_j') L^3 dV'+\frac{3μσ_e}{2Δt} ∫_{Ω_e}[\frac{1}{L} w_i'⋅\frac{1}{L} [w']_j L^3 dV']]$$
+In TMTGEM, scaled form of Eq. (15) is solved using the scaling length L, set to be 1000m in TMTGEM. Consider to rewrite Eq. (17) by using $∇=\frac{1}{L} ∇'$,$w=\frac{1}{L} \mathbf{w}'$,$dV=L^3 dV'$, $Al[s⋅V/m⋅m]=∫A⋅dl=\frac{1}{L} Al'$, where $Al'$  [s⋅mV/km⋅km],and $E={\partial A}/{\partial t}$. Furthermore, we assume $v=\frac{1}{L}⋅v'$[mm/s] and $B_0=\frac{1}{L}^3⋅B_0'$  [nT] These replacements correspond to the fact that w and ∇ are constructed as w’ and ∇’ with the coordinate system in the unit of km.
 
-$$  \frac{1}{L}  [[Al' ]_j]_{n+2} ]=∑_{j=1}^6[\frac{1}{2Δt} [∫_{Ω_e}[\frac{1}{L} w_i'⋅\frac{1}{L} [w']_j L^3 dV']](4[\frac{1}{L}  [Al' ]_j]_{n+1}-[\frac{1}{L}  [Al' ]_j]_n )+] μσ_e ∑_{m=1}^4[(∫_{Ω_e}[\frac{1}{L} w_i' λ_m L^3 dV'])⋅[[\frac{1}{L} v'×\frac{1}{L}^3  B_0' ]_m]_{n+2} ] $$
+$$∑_{j=1}^6 \left[\int_{Ω_e}\frac{1}{L^2}\left( ∇'× \mathbf{w}'_i \right)\cdot \frac{1}{L^2} \left( ∇'×\mathbf{w}_j'\right) L^3 dV'+\frac{3μσ_e}{2Δt} ∫_{Ω_e}\frac{1}{L^2} \mathbf{w}_i'\cdot \mathbf{w}'_j L^3 dV' \right] \frac{1}{L} [Al'_j]_{n+2}$$
 
-$$⟺∑_{j=1}^6[[∫_{Ω_e}[{(∇'×w_i' )⋅(∇'×w_j' )}dV'+\frac{3μσ_e}{2Δt} L^2 ∫_{Ω_e}[w_i'⋅[w']_j dV']] [Al']_j ]=∑_{j=1}^6[\frac{L^2}{2Δt} [∫_{Ω_e}[w_i'⋅[w']_j dV']](4[[Al']_j]_{n+1}-[Al'_j]_n )+] μσ_e ∑_{m=1}^4[(∫_{Ω_e}[w_i' λ_m dV'])⋅[v'×B_0']_m ] $$
+$$=∑_{j=1}^6 \frac{1}{2Δt} \left[∫_{Ω_e}\frac{1}{L^2} \mathbf{w}_i'\cdot \mathbf{w}'_j L^3 dV'\right]\frac{1}{L}\left(4[Al'_j]_{n+1}-[Al'_j]_n \right)$$
+
+$$+μσ_e ∑_{m=1}^4 \left[\int_{Ω_e}\frac{1}{L} \mathbf{w}_i' λ_m L^3 dV'\right]\cdot \left[\left(\frac{1}{L} \mathbf{v}'\times\frac{1}{L^3}  \mathbf{B}'_0 \right)_m \right]_{n+2} $$
+
+$$⟺∑_{j=1}^6\left[∫_{Ω_e}(∇'×\mathbf{w}_i' )⋅(∇'×\mathbf{w}_j')dV'+\frac{3μσ_e L^2}{2Δt}  ∫_{Ω_e}\mathbf{w}_i'⋅\mathbf{w}'_j dV'\right] [Al'_j]_{n+2}$$
+
+$$=∑_{j=1}^6\frac{L^2}{2Δt} \left[∫_{Ω_e}\mathbf{w}_i'\cdot \mathbf{w}'_j dV'\right](4[Al'_j]_{n+1}-[Al'_j]_n )+ \mu \sigma_e ∑_{m=1}^4 \left[\int_{Ω_e}\mathbf{w}_i' λ_m dV'\right]⋅[[\mathbf{v}'×\mathbf{B}'_0]_m]_{n+2} $$
 
 
