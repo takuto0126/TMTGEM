@@ -9,10 +9,10 @@
 	});
 </script>
 
-# Manual of TMTGEM v1.3
+# Manual of TMTGEM v1.3.1
 ## Takuto Minami’s Tsunami-Generated Electro-Magnetic simulation code
 
-#### As of Nov 11, 2023
+#### As of Nov 27, 2026
 
 Takuto MINAMI
 tminami@port.kobe-u.ac.jp
@@ -339,6 +339,15 @@ Fig. 11. Parameters controlling the number of layers in the ocean.
 
 Note: Use of background mesh “bgmesh3d.pos” is not available for now.
 
+	Triangles on the ground/ocean surface and seafloor are kept as they are in pre3d.msh (since v1.3.1)
+
+When gmsh generates the 3-D mesh of pre3d.geo (air and solid earth), it used to refine the triangles on the sea surface, seafloor and ground surface according to bgmesh3d.pos. The nodes added by this refinement do not exist in ocean.msh, so em3d.msh became non-conforming at the interfaces between the ocean layer and the air/solid earth. Since v1.3.1, tmtgem/mesh/mk3dgeo.f90 appends the following transfinite constraints to pre3d.geo:
+
+	Transfinite Line{1:nline} = 2;
+	Transfinite Surface{1:ntriall};
+
+Here, nline is the number of edges of the 2-D triangles and ntriall is the number of the 2-D triangles (surfaces 1 to ntriall in pre3d.geo). With these constraints, gmsh adds no nodes inside these edges and triangles, so the surface triangles in pre3d.msh are identical to those of ocean.msh. The 16 lines and 10 faces of the outer box are not constrained and are meshed by gmsh as before.
+
 
 
 ## 5.2 Time-domain simulation part
@@ -428,6 +437,9 @@ Some options may not work. Please check source programs when behaviors are weird
 
 
 # 6. Release notes <a id="Release_notes"></a>
+### Version 1.3.1 (Nov 27, 2026)
+tmtgem/mesh/mk3dgeo.f90 is modified so that gmsh does not refine the sea-surface, seafloor and ground-surface triangles when generating the 3-D mesh of pre3d.geo. "Transfinite Line{1:nline} = 2;" and "Transfinite Surface{1:ntriall};" are added to pre3d.geo, which prevents gmsh from adding nodes that do not exist in ocean.msh and keeps em3d.msh conforming at the ocean interfaces. See "Triangles on the ground/ocean surface and seafloor are kept as they are in pre3d.msh" in Section 5.1.
+
 ### Version 1.3 (Dec 10, 2021)
 New parameter “nalyer” is added in solver/m_param.f90. More than one layer from comcot can be used in one simulation. Users can change # of layers at the line 12 in the control file to increase the layers in nested grid in comcot simulation. See Tohoku/em_2layer for example simulation.
 

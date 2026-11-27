@@ -850,7 +850,14 @@ real(8)                  ::  sizein,sizebo ! 2017.06.28
   write(1,*)                  (",",n3bot(i),i=1,ntrik),"};"
   write(1,*) "Volume(2)={2};"
 
-
+!#[6]## keep the sea-surface, seafloor and ground-surface triangles as they are        2026.11.27 CC
+! gmsh refined these triangles according to bgmesh3d.pos and added nodes that do not   2026.11.27 CC
+! exist in ocean.msh, which made em3d.msh non-conforming at the ocean interfaces.      2026.11.27 CC
+! Line 1..nline (edges of the 2-D triangles) get no inner nodes, and                   2026.11.27 CC
+! Plane Surface 1..ntriall (the 2-D triangles) get no inner nodes.                     2026.11.27 CC
+! The 16 lines and 10 faces of the outer box are still meshed by gmsh.                 2026.11.27 CC
+  write(1,*) "Transfinite Line{1:",nline,"} = 2;"      ! 2026.11.27 CC
+  write(1,*) "Transfinite Surface{1:",ntriall,"};"     ! 2026.11.27 CC
 
   100 continue
   close(1)
